@@ -15,6 +15,11 @@ Puesta al día con los cambios de la API del 2026-09-16 (CERTIFY M-16).
 
 ### Cambiado — **incompatible**
 
+- **Se deja de soportar Python 3.9**; el mínimo pasa a ser **3.10** (`requires-python = ">=3.10"`).
+  Quien siga en 3.9 no recibirá esta versión: `pip` se quedará en la última compatible en lugar
+  de romperse.
+- **Se añade Python 3.14** a la matriz de CI y a los classifiers. La matriz cubre ahora
+  3.10–3.14 en Linux, macOS y Windows.
 - `client.nif.validar()` ahora exige `nombre` en cada entrada. Una cadena suelta
   (`validar(["B26682641"])`) se rechaza en local con un `ValueError` que explica el motivo,
   en lugar de gastar una llamada para recibir un `400 VALIDATION_ERROR`. Es obligatorio

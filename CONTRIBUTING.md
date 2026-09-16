@@ -50,7 +50,8 @@ cupo ausente no es un cupo a cero. Esos comentarios son el objetivo, no el adorn
 - `ruff` para lint y formato (100 columnas), `mypy --strict` para tipos.
 - Los nombres de los métodos públicos reflejan los endpoints de la API, y los nombres de campo
   siguen siendo los suyos en español, para que la
-  [documentación de la API](https://github.com/VeriBai) se traslade aquí sin traducción.
+  [documentación de la API](https://veribai.com/docs/api) se traslade aquí
+  sin traducción.
 - **Idioma**: la documentación pública va en español (`README.md`, este fichero,
   `CHANGELOG.md`, `SECURITY.md` y `examples/`). El código va en inglés: docstrings,
   comentarios, mensajes de excepción, nombres de tests y mensajes de commit.

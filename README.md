@@ -154,7 +154,8 @@ export VERIBAI_ENVIRONMENT=live     # por defecto: test
 
 Los nombres de los métodos reflejan los endpoints, y los nombres de campo son los de la
 propia API —en español— así que todo lo que leas en la
-[documentación de la API](https://github.com/VeriBai) se traslada aquí sin traducción.
+[documentación de la API](https://veribai.com/docs/api) se traslada aquí sin
+traducción.
 
 | Grupo | Métodos |
 |---|---|
