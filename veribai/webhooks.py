@@ -75,7 +75,15 @@ class MotivoRechazo:
 
 @dataclass(frozen=True)
 class Entrega:
-    """One verified webhook delivery."""
+    """One verified webhook delivery.
+
+    Branch on :attr:`evento` (or the properties below), and treat an event you did
+    not subscribe to as something to ignore rather than reject: a webhook receives
+    the events in its ``eventos`` subscription, one with no stored subscription
+    receives all of them, and a subscription can change without your handler being
+    redeployed. Answering 4xx to an unexpected event only earns a retry, and 20
+    consecutive failures suspend the webhook.
+    """
 
     evento: str
     id_entrega: str
