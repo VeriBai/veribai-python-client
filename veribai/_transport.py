@@ -183,9 +183,17 @@ def _reintentable(err: errors.APIError, idempotente: bool) -> bool:
         return True  # documented retry-safe: nothing signed, nothing recorded
     if isinstance(err, errors.SigningInFlightError):
         return True  # a mid-signature race; the API says retry in a few seconds
+    if isinstance(err, errors.XmlPersistError):
+        # One code, two outcomes. On `crear` the invoice is already signed and the
+        # chain link sealed, and retrying answers 409 INVOICE_SIGNING_IN_FLIGHT for
+        # ever — which this client would then dutifully retry too. Only the variant
+        # whose message says nothing was sent may be sent again.
+        return err.reintentable
     if err.status in (502, 504):
         return idempotente  # the request may well have run to completion
     if err.status >= 500:
+        if err.code in errors.NEVER_RETRY_500_CODES:
+            return False  # a deployment fault; it will still be there in 20 seconds
         return idempotente or (err.code in errors.RETRY_SAFE_500_CODES)
     return False
 

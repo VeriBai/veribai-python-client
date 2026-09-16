@@ -134,6 +134,31 @@ class ValidationError(APIError):
     """
 
 
+class SignatureVerificationError(ValidationError):
+    """400 ``SIGNATURE_*`` — an uploaded representation PDF did not verify.
+
+    Raised by :meth:`~veribai.resources.representacion.RepresentacionRecurso.verificar`.
+    Branch on ``code`` for the reason, because they call for different actions:
+
+    * ``SIGNATURE_CRYPTO_INVALID`` — the signature does not validate, the document
+      was modified after signing, or it carries no digital signature at all;
+    * ``SIGNATURE_UNTRUSTED_CA`` — not from a recognised Spanish qualified CA;
+    * ``SIGNATURE_REVOKED`` — the signing certificate is revoked;
+    * ``SIGNATURE_CONTENT_MISMATCH`` — the signed text is not the document we
+      generated (or no text could be extracted);
+    * ``SIGNATURE_COMPANY_NIF_MISMATCH`` / ``SIGNATURE_REP_NIF_MISMATCH`` — the
+      certificate identifies a different company or representative;
+    * ``SIGNATURE_INVALID`` — the family's fallback, when nothing more specific fits.
+    """
+
+
+class CertificateError(ValidationError):
+    """400 ``CERT_ERROR`` — the PKCS#12 could not be loaded.
+
+    Wrong file or wrong password; the API does not distinguish them, on purpose.
+    """
+
+
 class AuthenticationError(APIError):
     """The API key is missing, unknown or disabled.
 
@@ -215,6 +240,20 @@ class ClientLimitReachedError(ConflictError):
     """409 ``CLIENT_LIMIT_REACHED`` — the plan's secondary-client cap is full."""
 
 
+class RepresentationSigningError(ConflictError):
+    """409 ``SIGNING_IN_PROGRESS`` — the client cannot be edited mid-signature.
+
+    A representation document has been generated and is out in the world waiting
+    for its ``verificar``; editing the row would make the document no longer match
+    it. Either wait, or abandon the signing with
+    :meth:`~veribai.resources.representacion.RepresentacionRecurso.cancelar_firma`.
+
+    Distinct from :class:`SigningInFlightError`, which is a transient *invoice*
+    signing race that this client retries for you. This one needs a decision, so
+    it is never retried.
+    """
+
+
 class RateLimitError(APIError):
     """429 — usage-plan throttle or monthly quota exhausted.
 
@@ -261,10 +300,46 @@ class EnvironmentNotAvailableError(ServiceUnavailableError):
 
 
 class AeatUnavailableError(ServiceUnavailableError):
-    """503 ``AEAT_UNAVAILABLE`` — the AEAT census service is unreachable.
+    """503 ``AEAT_UNAVAILABLE`` — the AEAT census could not be **reached**.
 
     ``payload`` may still carry a cache-served ``resultados`` subset.
+
+    Since 2026-09-16 this is scoped to a genuine transport failure, which is what
+    makes retrying it meaningful. A NIF the census simply answers *nothing* about
+    — the call succeeded, the entry is just absent from the reply — is no longer
+    a 503 for the whole batch: it comes back as an ordinary ``200`` with
+    ``estado: no_procesado`` for that entry and real verdicts for the rest. Those
+    are never cached, so the next call asks again by itself.
     """
+
+
+class XmlPersistError(ServerError):
+    """500 ``XML_PERSIST_ERROR`` (TicketBAI) — the signed XML could not be stored.
+
+    🚨 **One code, two very different situations, and only the message separates
+    them** — so this class reads the message so you do not have to:
+
+    * on ``subsanar`` / ``anular`` (the ZUZENDU corrected-document paths) nothing
+      was signed, sealed or enqueued. The identical retry is safe and is the right
+      action; :attr:`reintentable` is ``True`` and the client retries it for you;
+    * on ``crear`` the invoice **was** signed and **the hash chain link is sealed**.
+      The signature now exists only in the chain row. Retrying does not fix it —
+      it answers ``409 INVOICE_SIGNING_IN_FLIGHT`` indefinitely — and the account
+      needs operator repair. :attr:`reintentable` is ``False``; contact support
+      rather than looping.
+
+    The API team tracks the one-code-for-two-outcomes weakness as ``CERTIFY_LIVE``
+    M-32. When it is split into two codes, this heuristic should be replaced by
+    the codes themselves.
+    """
+
+    #: The API's own wording for the recoverable variant.
+    _MARCA_REINTENTABLE = "reintente"
+
+    @property
+    def reintentable(self) -> bool:
+        """Whether an identical retry can help. See the class docstring."""
+        return self._MARCA_REINTENTABLE in (self.message or "").lower()
 
 
 # --------------------------------------------------------------------------
@@ -280,6 +355,21 @@ RETRY_SAFE_500_CODES = frozenset(
         "AWS_SERVICE_ERROR",
         "QR_GENERATION_ERROR",
         "INTERNAL_ERROR",
+        # Both documented "Retryable" in API_GENERAL.md as of 2026-09-16.
+        # DATABASE_ERROR is the most widely raised of the family — 13 handlers
+        # across the invoicing read surface and the clients surface.
+        "DATABASE_ERROR",
+        "AUTH_ERROR",
+    }
+)
+
+#: Codes on a 500 that no retry can resolve, because the fault is not transient.
+#: Retrying these only spends quota to be told the same thing again.
+NEVER_RETRY_500_CODES = frozenset(
+    {
+        # The CloudFront domain is not wired on the Lambda: a deployment fault,
+        # not a client one, and it will still be there in 20 seconds.
+        "CF_NOT_CONFIGURED",
     }
 )
 
@@ -288,6 +378,16 @@ _CODE_MAP: Dict[str, type] = {
     "INVOICE_SIGNING_IN_FLIGHT": SigningInFlightError,
     "ALREADY_CANCELLED": AlreadyCancelledError,
     "ALREADY_EXISTS": AlreadyCancelledError,
+    "SIGNING_IN_PROGRESS": RepresentationSigningError,
+    "XML_PERSIST_ERROR": XmlPersistError,
+    "CERT_ERROR": CertificateError,
+    "SIGNATURE_INVALID": SignatureVerificationError,
+    "SIGNATURE_CRYPTO_INVALID": SignatureVerificationError,
+    "SIGNATURE_UNTRUSTED_CA": SignatureVerificationError,
+    "SIGNATURE_REVOKED": SignatureVerificationError,
+    "SIGNATURE_CONTENT_MISMATCH": SignatureVerificationError,
+    "SIGNATURE_COMPANY_NIF_MISMATCH": SignatureVerificationError,
+    "SIGNATURE_REP_NIF_MISMATCH": SignatureVerificationError,
     "MACHINE_NOT_REGISTERED": ShardingConflictError,
     "SERIE_OWNED_BY_OTHER_MACHINE": ShardingConflictError,
     "CLIENT_LIMIT_REACHED": ClientLimitReachedError,

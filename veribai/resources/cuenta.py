@@ -34,13 +34,17 @@ class CuentaRecurso(Recurso):
     def consumo(self) -> Optional[Dict[str, Any]]:
         """Just the quota block, or ``None`` when no figure is cached yet.
 
-        The figure is refreshed on a short cycle and the upstream counters lag by
-        minutes on top, so treat it as a good guide to how much is left and not as
-        a live counter: it cannot tell you whether one specific next call will
-        succeed.
+        ``{usadas, restantes, limite, periodo, observadoEn}``. The figure is
+        refreshed on a short cycle and the upstream counters lag by minutes on top,
+        so it can be roughly ten minutes behind — ``observadoEn`` says how far.
+        Treat it as a good guide to how much is left and not as a live counter: it
+        cannot tell you whether one specific next call will succeed. The only
+        authoritative signal that you have run out is a ``429``.
 
         Note the quota is per **API key**, not per account, and a rotated key
-        inherits the previous key's consumption — rotating does not reset it.
+        inherits the previous key's consumption — rotating does not reset it. That
+        is also why ``usadas + restantes`` can be *less* than ``limite`` after a
+        rotation.
         """
         bloque = self.obtener().get("consumo")
         return dict(bloque) if isinstance(bloque, dict) else None
