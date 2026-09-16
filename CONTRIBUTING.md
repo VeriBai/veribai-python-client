@@ -1,87 +1,103 @@
-# Contributing
+# Cómo contribuir
 
-Thanks for looking. A few things are worth knowing before you open a PR, because this
-package has a narrower brief than most API clients.
+Gracias por pasarte por aquí. Conviene saber un par de cosas antes de abrir un PR, porque
+este paquete tiene un alcance más estrecho que la mayoría de clientes de API.
 
-## What belongs here, and what does not
+## Qué entra aquí y qué no
 
-This library is the **transport and ergonomics** layer. It knows that an amount travels
-as a plain decimal string and that a date is `DD-MM-YYYY`. It deliberately does **not**
-know whether an invoice is fiscally valid.
+Esta biblioteca es la capa de **transporte y ergonomía**. Sabe que un importe viaja como una
+cadena decimal y que una fecha es `DD-MM-YYYY`. Deliberadamente **no** sabe si una factura es
+fiscalmente válida.
 
-That line is not fussiness. The rules are set by the AEAT and three foral haciendas, they
-change, and two of VeriBai's own date rules are still open decisions. A client that
-pre-rejected payloads locally would go stale and start refusing invoices the API would
-have accepted — and that is the one class of bug an integrator cannot work around. So:
+Esa línea no es manía. Las reglas las fijan la AEAT y tres haciendas forales, cambian, y dos
+de las propias reglas de fechas de VeriBai siguen siendo decisiones abiertas. Un cliente que
+rechazara payloads en local se quedaría desactualizado y empezaría a rechazar facturas que la
+API habría aceptado — y ese es justo el tipo de bug que un integrador no puede esquivar. Así
+que:
 
-- **Yes**: serialization, retries, pagination, error mapping, webhook verification,
-  anything that removes a footgun in how the API is *called*.
-- **No**: validating that a `tipoFactura` suits an operation, that a cuota matches its
-  base, or that a `fechaOperacion` is permitted. The API is the authority.
+- **Sí**: serialización, reintentos, paginación, mapeo de errores, verificación de webhooks,
+  cualquier cosa que elimine una trampa en *cómo se llama* a la API.
+- **No**: validar que un `tipoFactura` encaja con una operación, que una cuota cuadra con su
+  base, o que una `fechaOperacion` está permitida. La autoridad es la API.
 
-## Setup
+## Puesta en marcha
 
 ```bash
 uv venv && uv sync --group dev
-uv run pytest            # 250+ tests, all offline
+
+uv run pytest            # más de 250 tests, todos sin red
 uv run ruff check . && uv run ruff format .
 uv run mypy
 ```
 
 ## Tests
 
-No test in the default suite may reach the network. Everything is mocked at the HTTP
-boundary with `responses`. This is a hard rule, not a preference: a real submission signs
-a document and permanently advances a taxpayer's hash chain, and that is not something a
-test run may do by accident. Tests that need real credentials are marked `integration`
-and are opt-in.
+Ningún test de la suite por defecto puede tocar la red. Todo se simula en la frontera HTTP con
+`responses`. Es una regla dura, no una preferencia: un envío real firma un documento y avanza
+de forma permanente la cadena de hash de un obligado tributario, y eso no es algo que una
+ejecución de tests pueda hacer por accidente. Los tests que necesitan credenciales reales van
+marcados como `integration` y son opcionales.
 
-Coverage is at 99% and should stay above 95%. More useful than the number: when you fix a
-bug, add the test that would have caught it, and write the comment explaining **why** the
-behaviour is what it is. Several tests here exist because a plausible-looking alternative
-is wrong — that a retry after a network error is safe on some routes and not others, that
-`aceptada_con_errores` is terminal, that an absent quota is not a zero one. Those comments
-are the point.
+La cobertura está en el 99% y debe mantenerse por encima del 95%. Más útil que el número:
+cuando arregles un bug, añade el test que lo habría cazado, y escribe el comentario que
+explica **por qué** el comportamiento es el que es. Varios tests existen aquí porque una
+alternativa de aspecto razonable es incorrecta — que un reintento tras un error de red es
+seguro en unas rutas y no en otras, que `aceptada_con_errores` es un estado terminal, que un
+cupo ausente no es un cupo a cero. Esos comentarios son el objetivo, no el adorno.
 
-## Style
+## Estilo
 
-- `ruff` for lint and format (100 columns), `mypy --strict` for types.
-- Public method names mirror the API's endpoints, and field names stay the API's own
-  Spanish, so the [API documentation](https://github.com/VeriBai) maps here without
-  translation. Code, comments and docstrings are in English.
-- Responses come back as plain dicts. Typed objects are for places where a wrong reading
-  has a cost (`Verdicto`, `Pagina`, `webhooks.Entrega`) — adding models for everything
-  else would turn an additive server change into a client-side breakage.
+- `ruff` para lint y formato (100 columnas), `mypy --strict` para tipos.
+- Los nombres de los métodos públicos reflejan los endpoints de la API, y los nombres de campo
+  siguen siendo los suyos en español, para que la
+  [documentación de la API](https://github.com/VeriBai) se traslade aquí sin traducción.
+- **Idioma**: la documentación pública va en español (`README.md`, este fichero,
+  `CHANGELOG.md`, `SECURITY.md` y `examples/`). El código va en inglés: docstrings,
+  comentarios, mensajes de excepción, nombres de tests y mensajes de commit.
+- Las respuestas vuelven como diccionarios simples. Los objetos tipados son para los sitios
+  donde una lectura equivocada cuesta algo (`Verdicto`, `Pagina`, `webhooks.Entrega`);
+  añadir modelos para todo lo demás convertiría un cambio aditivo del servidor en una rotura
+  del cliente.
 
-## Adding an endpoint
+## Añadir un endpoint
 
-1. Read the handler or the OpenAPI spec — not the prose docs alone. They drift, in both
-   directions.
-2. Put it on the right resource class with the right base URL (invoicing vs management).
-3. Decide `idempotente=` honestly. It is what licenses a retry after a network error, so
-   it must be `True` only where VeriBai genuinely replays by identity.
-4. Test the verb, the path, the body and at least one error the endpoint really returns.
-5. Update the surface table in the README and add a CHANGELOG entry.
+1. Lee el handler o la especificación OpenAPI, no solo la documentación en prosa. Las dos se
+   desincronizan, en ambos sentidos.
+2. Ponlo en la clase de recurso correcta con la URL base correcta (facturación o gestión).
+3. Decide `idempotente=` honestamente. Es lo que autoriza un reintento tras un error de red,
+   así que solo puede ser `True` donde VeriBai reproduce de verdad por identidad.
+4. Testea el verbo, la ruta, el cuerpo y al menos un error que el endpoint devuelva de verdad.
+5. Actualiza la tabla de superficie del `README.md` y añade una entrada en el `CHANGELOG.md`.
 
-## Releasing
+## Publicar una versión
 
-Maintainers only.
+Solo mantenedores. **La versión de `pyproject.toml` es la única fuente de verdad**: no hay
+ninguna etiqueta que empujar a mano.
 
-1. Bump `version` in `pyproject.toml` and add the `CHANGELOG.md` entry.
-2. Merge to `main`.
-3. Push a tag matching the version: `git tag v0.1.1 && git push origin v0.1.1`.
+1. Sube `version` en `pyproject.toml` y añade la entrada en `CHANGELOG.md`.
+2. Haz merge a `main`.
 
-CI then verifies the tag matches `pyproject.toml`, runs the full suite, builds, and
-**waits for approval on the `pypi` environment**. Merging alone never publishes, and a
-tag alone does not either.
+Ya está. El workflow `release` se dispara con cualquier push a `main` que toque
+`pyproject.toml`, comprueba si `v<version>` ya existe y, si es una versión nueva, ejecuta la
+suite completa, construye los artefactos, publica en PyPI y **después** crea la etiqueta y la
+release de GitHub.
 
-### One-time setup (not yet done)
+Lo que dispara una publicación es el acto deliberado de cambiar la versión, no el merge: un
+merge que no toque `version` no publica nada, porque la etiqueta ya existe. La etiqueta es el
+*resultado* de una release, no su entrada — así, si la publicación falla o se rechaza, no
+queda una etiqueta afirmando lo contrario.
 
-**PyPI Trusted Publishing.** There is no API token anywhere, by design — PyPI has to be
-told to trust this workflow instead. At <https://pypi.org/manage/account/publishing/>,
-add a pending publisher:
+Si el entorno `pypi` tiene revisores obligatorios configurados (ver abajo), el job de
+publicación se queda esperando en GitHub → **Actions** → **Review deployments → pypi →
+Approve and deploy**.
 
-| Field | Value |
+### Configuración inicial (pendiente)
+
+**Trusted Publishing de PyPI.** No hay ningún token de API en ninguna parte, por diseño: hay
+que decirle a PyPI que confíe en este workflow. En
+<https://pypi.org/manage/account/publishing/>, añade un *pending publisher*:
+
+| Campo | Valor |
 |---|---|
 | PyPI project name | `veribai` |
 | Owner | `VeriBai` |
@@ -89,9 +105,19 @@ add a pending publisher:
 | Workflow name | `release.yml` |
 | Environment name | `pypi` |
 
-Naming the environment matters: it means a workflow run that has not passed the required
-reviewer cannot mint a PyPI token even if it somehow reached the publish step.
+Nombrar el entorno importa: significa que una ejecución del workflow que no haya pasado por el
+revisor obligatorio no puede obtener un token de PyPI ni aunque llegue de algún modo al paso
+de publicación.
 
-**Codecov.** Add a `CODECOV_TOKEN` repository secret from
-<https://app.codecov.io>. Uploads are non-blocking (`fail_ci_if_error: false`), so the
-suite stays green until it is set.
+**Entorno `pypi` en GitHub.** En Settings → Environments → `pypi`, marca **Required
+reviewers** y añádete. Sin eso, el entorno existe pero no detiene nada.
+
+> ⚠️ Esa opción solo aparece en repositorios **públicos**, o en repositorios privados de una
+> organización con plan de pago. Mientras este repo sea privado en el plan gratuito, el
+> entorno `pypi` no puede exigir aprobación y la publicación es automática. Las demás
+> protecciones (Trusted Publishing, atestaciones, acciones fijadas por SHA, `pip-audit`
+> bloqueante, revisión obligatoria del code owner para llegar a `main`) siguen en pie.
+
+**Codecov.** Añade un secreto de repositorio `CODECOV_TOKEN` desde
+<https://app.codecov.io>. Las subidas no bloquean (`fail_ci_if_error: false`), así que la
+suite sigue en verde hasta que esté configurado.

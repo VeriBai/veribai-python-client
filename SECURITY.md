@@ -1,67 +1,79 @@
-# Security policy
+# Política de seguridad
 
-## Reporting a vulnerability
+## Cómo reportar una vulnerabilidad
 
-**Do not open a public issue.** Report privately through
+**No abras una issue pública.** Repórtala en privado a través de
 [GitHub Security Advisories](https://github.com/VeriBai/veribai-python-client/security/advisories/new),
-or by email to **soporte@veribai.com**.
+o por correo a **soporte@veribai.com**.
 
-Please include what you can: affected version, a minimal reproduction, and the impact
-you see. You will get an acknowledgement within 3 working days and an assessment within
-10. If the finding is confirmed we will agree a disclosure timeline with you and credit
-you in the advisory unless you would rather we did not.
+Incluye lo que puedas: versión afectada, una reproducción mínima y el impacto que ves.
+Recibirás acuse de recibo en 3 días laborables y una valoración en 10. Si se confirma el
+hallazgo, acordaremos contigo un calendario de divulgación y te acreditaremos en el aviso,
+salvo que prefieras que no.
 
-## Supported versions
+## Versiones soportadas
 
-The latest released `0.x` only, while the package is pre-1.0.
+Solo la última `0.x` publicada, mientras el paquete siga siendo anterior a la 1.0.
 
-## What this package is trusted with
+## Qué se le confía a este paquete
 
-An integrator gives this library an API key that can **file tax records** on behalf of
-real businesses, and a webhook secret that authenticates inbound callbacks. A malicious
-release would therefore be able to submit or suppress fiscal filings, not merely read
-data. The controls below exist because of that, not as ceremony.
+Un integrador le entrega a esta biblioteca una clave de API capaz de **presentar registros
+fiscales** en nombre de empresas reales, y un secreto de webhook que autentica las llamadas
+entrantes. Una release maliciosa podría, por tanto, presentar o suprimir declaraciones
+fiscales, no solo leer datos. Los controles de abajo existen por eso, no por ceremonia.
 
-### Supply chain
+### Cadena de suministro
 
-- **One runtime dependency** (`requests`). Every transitive package is attack surface, so
-  the list is kept deliberately short and reviewed before it grows.
-- **Publishing uses PyPI Trusted Publishing (OIDC)**. No long-lived API token exists, so
-  there is no token to steal, leak or forget to rotate.
-- **Releases are built in CI from a tagged commit** and published only after a human
-  approves the `pypi` GitHub environment. Merging to `main` does not publish.
-- **Build provenance attestations** are attached to every artifact, so a published wheel
-  can be traced back to the workflow run and commit that produced it.
-- **Every third-party GitHub Action is pinned to a commit SHA**, not a tag — a tag can be
-  moved to point at different code after it was reviewed.
-- **Workflows are read-only by default** (`permissions: contents: read`); jobs request
-  more only where they need it, and `persist-credentials: false` keeps the checkout token
-  out of the build environment.
-- **`pip-audit` gates CI**, so a dependency with a known advisory fails the build rather
-  than appearing on a dashboard later.
-- CodeQL (`security-extended`) and `bandit` run on every push, plus CodeQL weekly so a
-  newly published advisory is found without waiting for a commit.
+- **Una sola dependencia en tiempo de ejecución** (`requests`). Cada paquete transitivo es
+  superficie de ataque, así que la lista se mantiene deliberadamente corta y se revisa antes
+  de que crezca.
+- **La publicación usa Trusted Publishing de PyPI (OIDC)**. No existe ningún token de API de
+  larga duración, así que no hay token que robar, filtrar u olvidarse de rotar.
+- **Las releases se construyen en CI**, nunca en la máquina de nadie. Lo que dispara una
+  publicación es subir `version` en `pyproject.toml`: un merge a `main` que no cambie la
+  versión no publica nada. La etiqueta y la release de GitHub se crean *después* de una
+  publicación correcta, de modo que una etiqueta siempre corresponde a algo que se publicó
+  de verdad.
+- **El job de publicación corre en el entorno `pypi` de GitHub**, que puede exigir la
+  aprobación de una persona con *required reviewers*. Esa protección solo está disponible en
+  repositorios públicos o en planes de pago; mientras este repositorio sea privado en el plan
+  gratuito, el entorno no bloquea nada y llegar a `main` (revisión obligatoria del code owner,
+  ramas protegidas) es la barrera efectiva.
+- **Cada artefacto lleva atestaciones de procedencia** (*build provenance*), de modo que un
+  wheel publicado se puede rastrear hasta la ejecución del workflow y el commit que lo
+  produjeron.
+- **Cada GitHub Action de terceros está fijada a un SHA de commit**, no a una etiqueta: una
+  etiqueta se puede mover para apuntar a código distinto del que se revisó.
+- **Los workflows son de solo lectura por defecto** (`permissions: contents: read`); los jobs
+  piden más solo donde lo necesitan, y `persist-credentials: false` mantiene el token del
+  checkout fuera del entorno de build.
+- **`pip-audit` bloquea el CI**, así que una dependencia con un aviso conocido rompe la build
+  en lugar de aparecer más tarde en un panel.
+- CodeQL (`security-extended`) y `bandit` se ejecutan en cada push, y CodeQL además
+  semanalmente, para que un aviso recién publicado se detecte sin esperar a un commit.
 
-### Repository
+### Repositorio
 
-- Only the owner can merge to `main` or `develop`: protected branches, required code-owner
-  review, no force pushes, no branch deletion, and a linear history.
-- Commits on protected branches must be signed.
-- Release tags are protected and cannot be moved once published.
+- Solo el propietario puede hacer merge a `main` o `develop`: ramas protegidas, revisión
+  obligatoria del code owner, sin force push, sin borrado de rama e historial lineal.
+- Los commits en ramas protegidas deben ir firmados.
+- Las etiquetas de release están protegidas y no se pueden mover una vez publicadas.
 
-### In the library itself
+### En la propia biblioteca
 
-- The API key is sent only as the `x-api-key` header, to the VeriBai hosts the client was
-  configured with. It is never logged, and `repr()` redacts it — including for keys short
-  enough that showing a tail would show the key.
-- Webhook signatures are compared with `hmac.compare_digest`, and the body is **not
-  deserialized until the signature has passed**, so unauthenticated input never reaches a
-  parser.
-- The library holds no credentials of its own and writes nothing to disk except where you
-  explicitly ask (`guardar_qr`).
+- La clave de API se envía únicamente como cabecera `x-api-key`, y solo a los hosts de VeriBai
+  con los que se configuró el cliente. Nunca se registra en logs, y `repr()` la censura —
+  incluso para claves lo bastante cortas como para que mostrar el final fuera mostrar la
+  clave.
+- Las firmas de webhook se comparan con `hmac.compare_digest`, y el cuerpo **no se
+  deserializa hasta que la firma ha pasado**, de modo que una entrada no autenticada nunca
+  llega a un parser.
+- La biblioteca no guarda credenciales propias y no escribe nada en disco salvo donde se lo
+  pidas explícitamente (`guardar_qr`).
 
-## Scope
+## Alcance
 
-Vulnerabilities in the VeriBai **service** (the API this package talks to) also go to
-soporte@veribai.com. Findings in `requests` or Python itself belong upstream — though
-please do tell us if this package uses them in a way that makes an upstream issue worse.
+Las vulnerabilidades del **servicio** VeriBai (la API con la que habla este paquete) también
+van a soporte@veribai.com. Los hallazgos en `requests` o en el propio Python corresponden a
+sus proyectos — aunque, por favor, cuéntanoslo igualmente si este paquete los usa de una
+forma que agrave el problema original.
