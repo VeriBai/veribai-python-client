@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Actions are pinned to SHAs, which means they do not drift — and also that
+  # nothing updates them unless something asks. This is that something.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+        exclude-patterns: ["requests"]

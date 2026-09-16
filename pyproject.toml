@@ -1,0 +1,129 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "veribai"
+version = "0.1.0"
+description = "Official Python client for the VeriBai API — VeriFactu and TicketBAI invoice submission"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "VeriBai", email = "soporte@veribai.com" }]
+keywords = [
+    "veribai",
+    "verifactu",
+    "ticketbai",
+    "tbai",
+    "aeat",
+    "facturacion",
+    "invoicing",
+    "spain",
+    "tax",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: Spanish",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+# Deliberately minimal. This library submits legally binding fiscal records;
+# every transitive dependency is supply-chain surface. `requests` only.
+dependencies = ["requests>=2.25.0"]
+
+[project.urls]
+Homepage = "https://veribai.com"
+Documentation = "https://github.com/VeriBai/veribai-python-client#readme"
+Repository = "https://github.com/VeriBai/veribai-python-client"
+Issues = "https://github.com/VeriBai/veribai-python-client/issues"
+Changelog = "https://github.com/VeriBai/veribai-python-client/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "responses>=0.24",
+    "freezegun>=1.4",
+    "mypy>=1.8",
+    "types-requests>=2.31",
+    "ruff>=0.6",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["veribai"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/veribai", "/tests", "/README.md", "/CHANGELOG.md", "/LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--cov=veribai",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]
+markers = [
+    "integration: talks to a real VeriBai environment (never runs in the default suite)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["veribai"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
+
+[tool.mypy]
+# No `python_version`: current mypy no longer type-checks against 3.9, which the
+# package still supports at runtime. Ruff's target-version guards the syntax.
+strict = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+files = ["veribai"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "S", "C4", "RUF"]
+ignore = [
+    "S101",    # assert — used in tests
+    "UP006",   # keep typing.Dict/List for 3.9 runtime compat
+    "UP035",
+    "UP045",   # keep Optional[X] for 3.9 runtime compat
+    "UP007",
+    "RUF002",  # en dashes and accents in prose are deliberate, not typos
+    "RUF003",
+    "RUF022",  # __all__ is grouped by concept, which reads better than alphabetically
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "E501"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples"]
+# B311 (non-cryptographic randomness): the one use is retry jitter, which spreads
+# timing across workers and protects nothing. Justified inline at the call site.
+skips = ["B311"]

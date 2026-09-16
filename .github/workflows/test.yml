@@ -1,0 +1,127 @@
+name: test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+  # Called by release.yml, so a release runs the same suite rather than a copy
+  # of it that can drift.
+  workflow_call:
+
+# Read-only by default. Any job that needs more asks for it explicitly, so a
+# compromised dependency in a test job cannot write to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  test:
+    name: py${{ matrix.python-version }} · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      # Every third-party action is pinned to a commit SHA, not a tag: a tag can
+      # be moved to point at different code after review.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --group dev --python ${{ matrix.python-version }}
+
+      - name: Test
+        run: uv run --no-sync pytest -q
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  lint:
+    name: lint + types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+      - run: uv sync --group dev
+      - name: ruff (lint)
+        run: uv run --no-sync ruff check .
+      - name: ruff (format)
+        run: uv run --no-sync ruff format --check .
+      - name: mypy
+        run: uv run --no-sync mypy
+
+  security:
+    name: security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - run: uv sync --group dev
+
+      - name: bandit (source)
+        run: uv run --no-sync bandit -r veribai -c pyproject.toml
+
+      # Gating on purpose. This package submits legally binding fiscal records;
+      # shipping a release built on a dependency with a known advisory is not a
+      # thing to discover later from a dashboard.
+      # `--no-emit-project` audits the DEPENDENCIES, not this package: auditing
+      # ourselves would ask PyPI about a version that does not exist yet.
+      - name: pip-audit (dependencies)
+        run: |
+          uv export --no-emit-project --no-hashes --no-header --no-annotate \
+            --format requirements-txt > /tmp/requirements.txt
+          uv run --no-sync pip-audit --strict --progress-spinner=off -r /tmp/requirements.txt
+
+  build:
+    name: build + verify artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Check metadata renders on PyPI
+        run: uvx twine check --strict dist/*
+
+      # Prove the wheel is installable and importable on its own, from a clean
+      # interpreter — not merely that the source tree works.
+      - name: Install the wheel and import it
+        run: |
+          uv venv /tmp/fresh
+          VIRTUAL_ENV=/tmp/fresh uv pip install dist/*.whl
+          /tmp/fresh/bin/python -c "import veribai; print(veribai.__version__)"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-smoke
+          path: dist/
+          retention-days: 7
