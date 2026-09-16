@@ -1,21 +1,21 @@
-# Examples
+# Ejemplos
 
-Every script here runs against the **sandbox** and needs two things:
+Todos los scripts de aquí se ejecutan contra el **sandbox** y necesitan dos cosas:
 
 ```bash
 export VERIBAI_API_KEY=...
-export VERIBAI_NIF_EMISOR=...     # a secondary client registered on your account
+export VERIBAI_NIF_EMISOR=...     # un cliente secundario registrado en tu cuenta
 ```
 
-They are ordered: `01` is the whole VeriFactu round trip and the rest assume you have
-read it.
+Están ordenados: el `01` es el ciclo completo de VeriFactu y el resto dan por hecho que ya lo
+has leído.
 
-| File | What it shows |
+| Fichero | Qué muestra |
 |---|---|
-| [`01_primera_factura.py`](01_primera_factura.py) | VeriFactu alta, waiting for the AEAT verdict, reading the QR |
-| [`02_ticketbai.py`](02_ticketbai.py) | TicketBAI alta — signed at ingress, so the QR is in the response |
-| [`03_webhook_flask.py`](03_webhook_flask.py) | Receiving deliveries: verify, deduplicate, act |
-| [`04_alta_capacidad.py`](04_alta_capacidad.py) | Registering devices during the preparation window |
+| [`01_primera_factura.py`](01_primera_factura.py) | Alta VeriFactu, espera del veredicto de la AEAT y lectura del QR |
+| [`02_ticketbai.py`](02_ticketbai.py) | Alta TicketBAI — firmada en la entrada, así que el QR viene en la respuesta |
+| [`03_webhook_flask.py`](03_webhook_flask.py) | Recibir entregas: verificar, deduplicar, actuar |
+| [`04_alta_capacidad.py`](04_alta_capacidad.py) | Registrar dispositivos durante la ventana de preparación |
 
-None of them touches production. `01` and `02` do submit real sandbox invoices to the
-tax authorities' test environments, which is the point of a sandbox.
+Ninguno toca producción. El `01` y el `02` sí envían facturas reales de sandbox a los entornos
+de pruebas de las administraciones tributarias, que es justo para lo que sirve un sandbox.

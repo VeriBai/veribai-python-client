@@ -1,4 +1,4 @@
-"""VeriFactu: issue an invoice, wait for the AEAT verdict, fetch the QR.
+"""VeriFactu: emitir una factura, esperar el veredicto de la AEAT y descargar el QR.
 
 python examples/01_primera_factura.py
 """
@@ -15,11 +15,11 @@ NIF_EMISOR = os.environ["VERIBAI_NIF_EMISOR"]
 
 
 def main() -> None:
-    with veribai.Client() as client:  # sandbox, key from VERIBAI_API_KEY
+    with veribai.Client() as client:  # sandbox, clave desde VERIBAI_API_KEY
         cuenta = client.cuenta.obtener()
         print(f"entorno={cuenta['entorno']} plan={cuenta.get('plan')}")
         if not cuenta.get("facturacionActiva", True):
-            raise SystemExit("billing is blocking new invoices on this account")
+            raise SystemExit("la facturación está bloqueada en esta cuenta")
 
         factura = {
             "version": "1.0",
@@ -27,7 +27,7 @@ def main() -> None:
             "cabecera": {
                 "serie": "DEMO",
                 "numero": date.today().strftime("%Y%m%d%H%M"),
-                "fechaExpedicion": date.today(),  # a date object; converted for you
+                "fechaExpedicion": date.today(),  # un objeto date; se convierte solo
                 "tipoFactura": "F1",
                 "descripcion": "Servicios de consultoría",
             },
@@ -37,7 +37,7 @@ def main() -> None:
                     "impuesto": "01",
                     "claveRegimen": "01",
                     "calificacionOperacion": "S1",
-                    "baseImponible": Decimal("100.00"),  # Decimal, never float
+                    "baseImponible": Decimal("100.00"),  # Decimal, nunca float
                     "tipoImpositivo": Decimal("21"),
                     "cuotaRepercutida": Decimal("21.00"),
                 }
@@ -47,28 +47,28 @@ def main() -> None:
 
         respuesta = client.verifactu.crear(factura)
         id_factura = respuesta["idFactura"]
-        # Accepted — NOT yet filed. The AEAT has not seen it.
+        # Aceptada — todavía NO presentada. La AEAT aún no la ha visto.
         print(f"aceptada: {id_factura} estado={respuesta['estado']}")
 
-        # The verdict arrives asynchronously; VeriFactu submits on a minute tick.
+        # El veredicto llega de forma asíncrona; VeriFactu envía en un tick por minuto.
         try:
             verdicto = client.facturas.esperar_verdicto(
                 id_factura, nif_emisor=NIF_EMISOR, timeout=240, con_detalle=True
             )
         except veribai.VerdictTimeout as exc:
-            # Not a failure of the invoice — it is accepted and still in flight.
-            print(f"still in flight: {exc.ultimo_estado.get('estadoEnvio')}")
+            # No es un fallo de la factura: está aceptada y todavía en curso.
+            print(f"todavía en curso: {exc.ultimo_estado.get('estadoEnvio')}")
             return
 
         if verdicto.registrada:
             print(f"REGISTRADA · CSV {verdicto.csv_aeat}")
             client.facturas.guardar_qr(id_factura, nif_emisor=NIF_EMISOR, ruta="factura-qr.png")
-            print("QR written to factura-qr.png")
+            print("QR guardado en factura-qr.png")
         elif verdicto.requiere_subsanacion:
-            # Filed, but with errors. It will never change on its own.
-            print("ACEPTADA CON ERRORES — send a subsanación")
+            # Presentada, pero con errores. No va a cambiar por sí sola.
+            print("ACEPTADA CON ERRORES — hay que enviar una subsanación")
         else:
-            print("RECHAZADA — not filed; the obligation is still open")
+            print("RECHAZADA — no presentada; la obligación sigue abierta")
             for registro in (verdicto.detalle or {}).get("registros", []):
                 codigo = registro.get("codigoRespuestaAeat")
                 if codigo:

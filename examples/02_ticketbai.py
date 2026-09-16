@@ -1,8 +1,9 @@
-"""TicketBAI: the invoice is signed at ingress, so the QR comes back immediately.
+"""TicketBAI: la factura se firma en la entrada, así que el QR vuelve de inmediato.
 
     python examples/02_ticketbai.py
 
-The emisor must be registered with a `tbai-*` hacienda, and `provincia` must match it.
+El emisor debe estar dado de alta con una hacienda `tbai-*`, y `provincia` tiene que
+coincidir con ella.
 """
 
 from __future__ import annotations
@@ -37,31 +38,31 @@ def main() -> None:
                     "descripcion": "Servicios de consultoría",
                 }
             ],
-            # Required for Araba, whose hacienda rejects altas with no detail lines.
+            # Obligatorio en Álava, cuya hacienda rechaza las altas sin líneas de detalle.
             "lineas": [
                 {
                     "descripcion": "Servicios de consultoría",
                     "cantidad": Decimal("1"),
-                    "importeUnitario": Decimal("100.00"),  # without VAT
-                    "importeTotal": Decimal("121.00"),  # with VAT
+                    "importeUnitario": Decimal("100.00"),  # sin IVA
+                    "importeTotal": Decimal("121.00"),  # con IVA
                 }
             ],
         }
 
         respuesta = client.ticketbai.crear(factura)
 
-        # Already signed and chained: these identifiers are final and stable across
-        # retries, because a duplicate is replayed rather than re-signed.
+        # Ya firmada y encadenada: estos identificadores son definitivos y estables entre
+        # reintentos, porque un duplicado se reproduce en lugar de volver a firmarse.
         print(f"idTbai: {respuesta['idTbai']}")
         print(f"URL:    {respuesta['urlValidacion']}")
 
         if qr := respuesta.get("qrBase64"):
-            datos = qr.split(",", 1)[-1]  # strip the data: URI prefix if present
+            datos = qr.split(",", 1)[-1]  # quita el prefijo del data: URI si viene
             with open("tbai-qr.png", "wb") as fh:
                 fh.write(base64.b64decode(datos))
-            print("QR written to tbai-qr.png")
+            print("QR guardado en tbai-qr.png")
 
-        # Only the submission to the foral hacienda is asynchronous.
+        # Solo el envío a la hacienda foral es asíncrono.
         verdicto = client.facturas.esperar_verdicto(
             respuesta["idFactura"], nif_emisor=NIF_EMISOR, timeout=120
         )

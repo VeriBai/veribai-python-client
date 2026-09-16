@@ -1,10 +1,10 @@
-"""Alta capacidad: registering devices during the preparation window.
+"""Alta capacidad: registrar dispositivos durante la ventana de preparación.
 
     python examples/04_alta_capacidad.py
 
-A high-volume taxpayer can run one hash chain per device instead of one per NIF. The
-preparation window is where you register them — and nothing about invoice routing
-changes until VeriBai staff flip the account to `activa`.
+Un obligado tributario de mucho volumen puede llevar una cadena de hash por dispositivo en
+lugar de una por NIF. La ventana de preparación es donde se registran — y nada del
+enrutado de facturas cambia hasta que VeriBai pasa la cuenta a `activa`.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def main() -> None:
         print(f"fase: {fase} · modo de cadena: {estado['modoCadena']}")
 
         if fase == "no_contratada":
-            raise SystemExit("Alta capacidad is a contracted option — talk to VeriBai first")
+            raise SystemExit("Alta capacidad es una opción contratada — habla antes con VeriBai")
 
         for id_maquina, etiqueta in DISPOSITIVOS.items():
             try:
@@ -36,23 +36,24 @@ def main() -> None:
                     raise
                 print(f"  {id_maquina}: ya estaba activo")
 
-        # The head office's own series, claimed before any device can take them.
+        # Las series de la central, reclamadas antes de que ningún dispositivo las coja.
         reserva = client.dispositivos.reservar_series_centralizadas(NIF_EMISOR, ["FC", "FR"])
         print(f"series centralizadas: {reserva['reservadas']}")
         for omitida in reserva["omitidas"]:
             print(f"  {omitida['serie']} ya es de {omitida.get('idMaquina')}")
 
         if fase == "preparacion":
-            # What your systems ACTUALLY sent, versus what is registered. An empty list
-            # is not proof nothing sends a tag — a nightly batch may not have run yet.
+            # Lo que tus sistemas mandan DE VERDAD, frente a lo que está registrado. Una lista
+            # vacía no prueba que nadie envíe etiqueta: puede que un batch nocturno no haya
+            # llegado a ejecutarse.
             estado = client.dispositivos.listar(NIF_EMISOR)
             print(f"\nobservando desde {estado.get('observandoDesde')}")
             for visto in estado.get("idsMaquinaVistos", []):
                 marca = "ok" if visto["registrado"] else "SIN REGISTRAR"
                 print(f"  {visto['idMaquina']}: {marca} (visto {visto['ultimaVez']})")
 
-            # When everything reconciles, tell VeriBai. Idempotent: the first press is
-            # the one the operator sees, so a second never resets their clock.
+            # Cuando todo cuadre, avisa a VeriBai. Es idempotente: la primera solicitud es la
+            # que vale, así que pulsarlo otra vez nunca reinicia el reloj del operador.
             # client.dispositivos.solicitar_activacion(NIF_EMISOR)
 
 
