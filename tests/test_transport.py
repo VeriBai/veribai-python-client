@@ -190,6 +190,66 @@ class TestRespuestasDeError:
         assert r.datos == {"ok": 1}
 
     @responses.activate
+    def test_database_error_se_reintenta_aunque_no_sea_idempotente(self, sin_dormir):
+        # Documented "Retryable" in API_GENERAL.md, and the most widely raised 500
+        # of the family — 13 handlers across the read and clients surfaces.
+        responses.add(
+            responses.POST, f"{SANDBOX}/v1/webhooks", json=error("DATABASE_ERROR"), status=500
+        )
+        responses.add(responses.POST, f"{SANDBOX}/v1/webhooks", json={"ok": 1}, status=201)
+        r = transporte(sin_dormir).request("POST", SANDBOX, "/v1/webhooks", json={})
+        assert r.datos == {"ok": 1}
+
+    @responses.activate
+    def test_cf_not_configured_no_se_reintenta_ni_en_ruta_idempotente(self, sin_dormir):
+        # A deployment fault: the CloudFront domain is not wired on the Lambda. It
+        # will still not be wired in 20 seconds, so retrying only spends quota.
+        url = f"{SANDBOX}/v1/cumplimiento/declaracion-responsable"
+        responses.add(responses.GET, url, json=error("CF_NOT_CONFIGURED"), status=500)
+        with pytest.raises(errors.ServerError):
+            transporte(sin_dormir).request(
+                "GET", SANDBOX, "/v1/cumplimiento/declaracion-responsable", idempotente=True
+            )
+        assert len(responses.calls) == 1
+
+    @responses.activate
+    def test_xml_persist_error_de_subsanar_se_reintenta(self, sin_dormir):
+        # The ZUZENDU paths: nothing was signed, sealed or enqueued, and the API's
+        # own message says so. The identical retry is the right action.
+        url = f"{SANDBOX}/v1/ticketbai/subsanar"
+        responses.add(
+            responses.PUT,
+            url,
+            json=error("XML_PERSIST_ERROR", "No se ha enviado nada. Reintente."),
+            status=500,
+        )
+        responses.add(responses.PUT, url, json={"idFactura": "F1"}, status=200)
+        r = transporte(sin_dormir).request(
+            "PUT", SANDBOX, "/v1/ticketbai/subsanar", json={}, idempotente=True
+        )
+        assert r.datos == {"idFactura": "F1"}
+
+    @responses.activate
+    def test_xml_persist_error_de_crear_no_se_reintenta(self, sin_dormir):
+        # 🚨 Same code, opposite meaning. On `crear` the invoice IS signed and the
+        # chain link IS sealed; retrying answers 409 INVOICE_SIGNING_IN_FLIGHT for
+        # ever — which this client would then retry too, burning the whole policy to
+        # arrive at a confusing error. It needs operator repair, not a loop.
+        url = f"{SANDBOX}/v1/ticketbai/crear"
+        responses.add(
+            responses.POST,
+            url,
+            json=error("XML_PERSIST_ERROR", "Error al guardar el XML firmado de TicketBAI."),
+            status=500,
+        )
+        with pytest.raises(errors.XmlPersistError) as exc:
+            transporte(sin_dormir).request(
+                "POST", SANDBOX, "/v1/ticketbai/crear", json={}, idempotente=True
+            )
+        assert exc.value.reintentable is False
+        assert len(responses.calls) == 1
+
+    @responses.activate
     def test_500_sin_codigo_conocido_no_se_reintenta_en_ruta_no_idempotente(self, sin_dormir):
         responses.add(responses.POST, f"{SANDBOX}/v1/webhooks", json=error("MYSTERY"), status=500)
         with pytest.raises(errors.ServerError):
@@ -289,6 +349,12 @@ class TestMapeoDeErrores:
             (409, "OTRO", errors.ConflictError),
             (429, "TOO_MANY", errors.RateLimitError),
             (500, "INTERNAL_ERROR", errors.ServerError),
+            (500, "XML_PERSIST_ERROR", errors.XmlPersistError),
+            (409, "SIGNING_IN_PROGRESS", errors.RepresentationSigningError),
+            (400, "CERT_ERROR", errors.CertificateError),
+            (400, "SIGNATURE_REVOKED", errors.SignatureVerificationError),
+            (400, "SIGNATURE_CONTENT_MISMATCH", errors.SignatureVerificationError),
+            (400, "SIGNATURE_INVALID", errors.SignatureVerificationError),
             (503, "AEAT_UNAVAILABLE", errors.AeatUnavailableError),
             (503, "CUALQUIERA", errors.ServiceUnavailableError),
             (418, "RARO", errors.APIError),

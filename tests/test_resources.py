@@ -95,32 +95,56 @@ class TestTicketbai:
 
 
 class TestNif:
-    def test_cadenas_simples(self, client, mock_http):
+    def test_entradas_completas(self, client, mock_http):
         mock_http.add(mock_http.POST, f"{MANAGE}/v1/nif/validar", json={"resultados": []})
-        client.nif.validar(["B26682641", "12345678Z"])
-        assert cuerpo(mock_http) == {"nifs": [{"nif": "B26682641"}, {"nif": "12345678Z"}]}
+        client.nif.validar(
+            [
+                {"nif": "B26682641", "nombre": "SKY CLOUD INFRASTRUCTURE SL"},
+                {"nif": "12345678Z", "nombre": "NOMBRE APELLIDO"},
+            ]
+        )
+        assert cuerpo(mock_http) == {
+            "nifs": [
+                {"nif": "B26682641", "nombre": "SKY CLOUD INFRASTRUCTURE SL"},
+                {"nif": "12345678Z", "nombre": "NOMBRE APELLIDO"},
+            ]
+        }
 
-    def test_con_nombre(self, client, mock_http):
-        # For a persona física the AEAT checks the name too; without it the
-        # verdict is weaker exactly where it would have been strongest.
-        mock_http.add(mock_http.POST, f"{MANAGE}/v1/nif/validar", json={"resultados": []})
-        client.nif.validar([{"nif": "12345678Z", "nombre": "NOMBRE APELLIDO"}])
-        assert cuerpo(mock_http)["nifs"][0]["nombre"] == "NOMBRE APELLIDO"
+    def test_una_cadena_suelta_se_rechaza_en_local(self, client):
+        # `nombre` is required on every entry, so a bare string is a guaranteed 400.
+        # Refusing here saves a call against a quota that is per API key, and the
+        # message carries the reason the API's own 400 does not: the census cache is
+        # keyed on (nif, nombre).
+        with pytest.raises(ValueError, match="bare NIF string is not enough"):
+            client.nif.validar(["B26682641"])
 
-    def test_forzar_solo_si_se_pide(self, client, mock_http):
+    def test_nombre_vacio_se_rechaza(self, client):
+        with pytest.raises(ValueError, match="nifs\\[0\\]: 'nombre' is required"):
+            client.nif.validar([{"nif": "B1", "nombre": "  "}])
+
+    def test_nif_ausente_se_rechaza(self, client):
+        with pytest.raises(ValueError, match="nifs\\[0\\]: 'nif' is required"):
+            client.nif.validar([{"nombre": "SOLO EL NOMBRE"}])
+
+    def test_el_indice_del_error_es_el_de_la_entrada(self, client):
+        with pytest.raises(ValueError, match="nifs\\[1\\]"):
+            client.nif.validar([{"nif": "B1", "nombre": "UNO"}, {"nif": "B2", "nombre": ""}])
+
+    def test_no_se_envia_forzar(self, client, mock_http):
+        # `forzar` is a 400 on the API-key surface since 2026-09-16; it survives only
+        # on the JWT dashboard route. The parameter is gone rather than ignored.
         mock_http.add(mock_http.POST, f"{MANAGE}/v1/nif/validar", json={})
-        client.nif.validar(["B1"])
+        client.nif.validar([{"nif": "B1", "nombre": "X"}])
         assert "forzar" not in cuerpo(mock_http)
-        mock_http.add(mock_http.POST, f"{MANAGE}/v1/nif/validar", json={})
-        client.nif.validar(["B1"], forzar=True)
-        assert cuerpo(mock_http, 1)["forzar"] is True
+        with pytest.raises(TypeError):
+            client.nif.validar([{"nif": "B1", "nombre": "X"}], forzar=True)
 
     def test_lista_vacia(self, client):
         with pytest.raises(ValueError, match="at least one"):
             client.nif.validar([])
 
     def test_entrada_de_tipo_imposible(self, client):
-        with pytest.raises(TypeError, match="NIF string or a mapping"):
+        with pytest.raises(TypeError, match="mapping with 'nif' and 'nombre'"):
             client.nif.validar([123])
 
     def test_censo_caido(self, client, mock_http):
@@ -131,9 +155,21 @@ class TestNif:
             status=503,
         )
         with pytest.raises(veribai.AeatUnavailableError) as exc:
-            client.nif.validar(["B1"])
+            client.nif.validar([{"nif": "B1", "nombre": "X"}])
         # The cached subset still came back; losing it would waste a real answer.
         assert exc.value.payload["resultados"] == [{"nif": "B1"}]
+
+    def test_un_nif_sin_respuesta_del_censo_es_un_200_normal(self, client, mock_http):
+        # Since 2026-09-16 a NIF the census answers nothing about is a per-entry
+        # `no_procesado`, not a 503 for the whole batch — the old behaviour told the
+        # caller to retry a condition no retry can change.
+        mock_http.add(
+            mock_http.POST,
+            f"{MANAGE}/v1/nif/validar",
+            json={"resultados": [{"nif": "B1", "estado": "no_procesado"}]},
+        )
+        respuesta = client.nif.validar([{"nif": "B1", "nombre": "X"}])
+        assert respuesta["resultados"][0]["estado"] == "no_procesado"
 
 
 class TestClientes:
