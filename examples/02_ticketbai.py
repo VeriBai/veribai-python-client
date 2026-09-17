@@ -20,7 +20,8 @@ PROVINCIA = os.environ.get("VERIBAI_PROVINCIA", "araba")
 
 
 def main() -> None:
-    with veribai.Client() as client:
+    # `environment` explícito a propósito: ver examples/01_primera_factura.py.
+    with veribai.Client(environment="test") as client:
         factura = {
             "provincia": PROVINCIA,
             "emisor": {"nif": NIF_EMISOR, "nombre": "Mi Empresa SL"},

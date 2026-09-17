@@ -19,7 +19,7 @@ import veribai
 from datetime import date
 from decimal import Decimal
 
-client = veribai.Client(api_key="...")  # sandbox por defecto
+client = veribai.Client(api_key="...", environment="test")  # sandbox
 
 respuesta = client.verifactu.crear(
     {
@@ -133,9 +133,34 @@ un parámetro `entorno`.
 client = veribai.Client(api_key="...", environment="live")
 ```
 
-El sandbox es el valor por defecto a propósito: el coste de una factura equivocada en sandbox
+El entorno se resuelve **en este orden**:
+
+1. el argumento `environment=`;
+2. la variable `VERIBAI_ENVIRONMENT`;
+3. `"test"`.
+
+> ⚠️ Por eso `veribai.Client(api_key="...")` es sandbox **sólo si `VERIBAI_ENVIRONMENT` no
+> está definida**. En una superficie peligrosa, dilo: un `environment=` explícito gana
+> siempre, y es lo que hace que merezca la pena escribirlo.
+
+El sandbox es el último recurso a propósito: el coste de una factura equivocada en sandbox
 es una prueba desperdiciada, y el de una factura equivocada en producción es un registro
 fiscal presentado legalmente.
+
+Para comprobar dónde estás sin gastar una llamada:
+
+```python
+client.entorno  # 'test' | 'live'
+client.origen_entorno  # de dónde salió: el argumento, la variable o el valor por defecto
+client.invoicing_url  # la URL que lo decide
+```
+
+Y para comprobarlo contra el servidor, `client.cuenta.obtener()` devuelve el `entorno` que
+la API deduce de tu propia clave, que es la verdad de referencia.
+
+Un entorno equivocado no es, por sí solo, una factura equivocada: **las claves se emiten por
+entorno**, así que una clave de TEST enviada a `api.veribai.com` —o una de LIVE enviada al
+sandbox— la rechaza API Gateway como `AuthenticationError` antes de llegar a VeriBai.
 
 La configuración también puede venir del entorno, para que el mismo código pase de uno a otro
 sin tocar nada:

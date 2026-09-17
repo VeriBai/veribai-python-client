@@ -15,7 +15,9 @@ NIF_EMISOR = os.environ["VERIBAI_NIF_EMISOR"]
 
 
 def main() -> None:
-    with veribai.Client() as client:  # sandbox, clave desde VERIBAI_API_KEY
+    # `environment` explícito: `Client()` a secas sólo es sandbox si
+    # VERIBAI_ENVIRONMENT no está definida. La clave sale de VERIBAI_API_KEY.
+    with veribai.Client(environment="test") as client:
         cuenta = client.cuenta.obtener()
         print(f"entorno={cuenta['entorno']} plan={cuenta.get('plan')}")
         if not cuenta.get("facturacionActiva", True):

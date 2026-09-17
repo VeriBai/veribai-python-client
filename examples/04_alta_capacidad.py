@@ -18,7 +18,8 @@ DISPOSITIVOS = {"TPV-BARRA-01": "Barra", "TPV-SALA-02": "Sala", "ERP-CENTRAL": "
 
 
 def main() -> None:
-    with veribai.Client() as client:
+    # `environment` explícito a propósito: ver examples/01_primera_factura.py.
+    with veribai.Client(environment="test") as client:
         estado = client.dispositivos.listar(NIF_EMISOR)
         fase = estado["faseAltaCapacidad"]
         print(f"fase: {fase} · modo de cadena: {estado['modoCadena']}")

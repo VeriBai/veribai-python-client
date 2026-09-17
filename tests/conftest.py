@@ -18,6 +18,21 @@ MANAGE = "https://manage-api.veribai.com"
 API_KEY = "test-key-0000"
 
 
+@pytest.fixture(autouse=True)
+def entorno_limpio(monkeypatch):
+    """Unset the VERIBAI_* variables for every test.
+
+    Without this the suite reads the developer's own shell: exporting
+    ``VERIBAI_ENVIRONMENT=live`` — which anyone integrating against production
+    eventually does — silently turned ``Client(api_key="k")`` into a LIVE client
+    and failed four construction tests for a reason nothing in them mentions.
+    A test that asserts a default must own the environment that default is read
+    from; tests needing a variable set it themselves.
+    """
+    monkeypatch.delenv("VERIBAI_API_KEY", raising=False)
+    monkeypatch.delenv("VERIBAI_ENVIRONMENT", raising=False)
+
+
 @pytest.fixture
 def mock_http():
     """Activate ``responses`` for one test."""
