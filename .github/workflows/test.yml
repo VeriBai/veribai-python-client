@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       # Every third-party action is pinned to a commit SHA, not a tag: a tag can
       # be moved to point at different code after review.
@@ -45,7 +45,9 @@ jobs:
         run: uv sync --group dev --python ${{ matrix.python-version }}
 
       - name: Test
-        run: uv run --no-sync pytest -q
+        # `junit_family=legacy` is the shape Codecov's test-analytics parser expects;
+        # the xunit2 default drops the per-test file/line attributes it reads.
+        run: uv run --no-sync pytest -q --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
@@ -53,6 +55,17 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
+          fail_ci_if_error: false
+
+      # `!cancelled()` rather than `success()`: a run with FAILING tests is precisely the
+      # one worth analysing, since that is where a flake shows up. Uploading only on green
+      # would hide the data this exists to collect.
+      - name: Upload test results
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' }}
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./junit.xml
           fail_ci_if_error: false
 
   lint:

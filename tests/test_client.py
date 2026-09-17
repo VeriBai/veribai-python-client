@@ -85,6 +85,45 @@ class TestConstruccion:
         monkeypatch.setenv("VERIBAI_ENVIRONMENT", "live")
         assert veribai.Client(api_key="k", environment="test").entorno == "test"
 
+    def test_el_aviso_nombra_la_variable_que_eligio_live(self, monkeypatch):
+        # The dangerous path. `Client(api_key=...)` reads as sandbox — the README
+        # said so outright until 2026-09-17 — while a variable set in the
+        # deployment picks LIVE and nothing in the calling code mentions it. The
+        # warning is then the ONLY thing that does, so it has to name the source:
+        # "LIVE selected" sends you reading your code, which is not where it is.
+        monkeypatch.setenv("VERIBAI_ENVIRONMENT", "live")
+        with warnings.catch_warnings(record=True) as capturados:
+            warnings.simplefilter("always")
+            c = veribai.Client(api_key="k")
+        assert c.es_live is True
+        assert c.origen_entorno == "the VERIBAI_ENVIRONMENT environment variable"
+        assert "VERIBAI_ENVIRONMENT environment variable" in str(capturados[0].message)
+
+    def test_el_aviso_nombra_el_argumento_que_eligio_live(self):
+        with warnings.catch_warnings(record=True) as capturados:
+            warnings.simplefilter("always")
+            c = veribai.Client(api_key="k", environment="live")
+        assert c.origen_entorno == "the environment= argument"
+        assert "environment= argument" in str(capturados[0].message)
+
+    def test_un_entorno_vacio_no_cae_en_la_variable(self, monkeypatch):
+        # The delta introduced with origen_entorno, kept on purpose. Until
+        # 2026-09-17 the resolution was `environment or os.environ.get(...) or
+        # "test"`, so a falsy argument fell THROUGH to the variable:
+        # `Client(environment=os.environ.get("MI_ENTORNO", ""))` — an ordinary
+        # way to write it — silently became LIVE whenever VERIBAI_ENVIRONMENT
+        # said so, having been handed an empty string by code that meant TEST.
+        # Refusing is the same choice as rejecting a typo: an environment the
+        # caller half-specified must not resolve to one they never named.
+        monkeypatch.setenv("VERIBAI_ENVIRONMENT", "live")
+        with pytest.raises(ValueError, match="unknown environment"):
+            veribai.Client(api_key="k", environment="")
+
+    def test_origen_del_entorno_por_defecto(self):
+        # Nothing asked for TEST; it is the last resort. Say so, rather than let
+        # a log line claim the caller chose it.
+        assert veribai.Client(api_key="k").origen_entorno == "the default"
+
     def test_urls_sobreescribibles(self):
         c = veribai.Client(
             api_key="k", invoicing_url="http://localhost:1", management_url="http://localhost:2"

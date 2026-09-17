@@ -13,7 +13,7 @@ at volume, from a webhook.
 
     import veribai
 
-    client = veribai.Client(api_key="...")          # sandbox by default
+    client = veribai.Client(api_key="...", environment="test")   # sandbox
     respuesta = client.verifactu.crear(factura)
     verdicto = client.facturas.esperar_verdicto(
         respuesta["idFactura"], nif_emisor="B12345674"
@@ -21,7 +21,11 @@ at volume, from a webhook.
     if verdicto.rechazada:
         ...                                          # not filed; correct and resubmit
 
-Sandbox is the default environment, and LIVE must be asked for explicitly.
+The environment resolves in one order: the ``environment=`` argument, then the
+``VERIBAI_ENVIRONMENT`` variable, then ``"test"``. TEST last-resort is deliberate,
+but note the middle step — a bare ``Client(api_key=...)`` is sandbox only while
+that variable is unset, so on a surface this dangerous, say which one you mean.
+An explicit argument always wins, which is what makes it worth writing.
 """
 
 from __future__ import annotations

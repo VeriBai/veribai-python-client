@@ -222,3 +222,12 @@ __marimo__/
 
 # Local scratch
 /tmp/
+
+# Test report for Codecov's test analytics (written by CI, and by a local run
+# that passes --junitxml)
+junit.xml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

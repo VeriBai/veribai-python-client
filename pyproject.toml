@@ -9,7 +9,7 @@ description = "Official Python client for the VeriBai API — VeriFactu and Tick
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "VeriBai", email = "soporte@veribai.com" }]
 keywords = [
     "veribai",
@@ -30,11 +30,11 @@ classifiers = [
     "Natural Language :: Spanish",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business :: Financial :: Accounting",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -46,7 +46,7 @@ dependencies = ["requests>=2.25.0"]
 
 [project.urls]
 Homepage = "https://veribai.com"
-Documentation = "https://github.com/VeriBai/veribai-python-client#readme"
+Documentation = "https://veribai.com/docs/api"
 Repository = "https://github.com/VeriBai/veribai-python-client"
 Issues = "https://github.com/VeriBai/veribai-python-client/issues"
 Changelog = "https://github.com/VeriBai/veribai-python-client/blob/main/CHANGELOG.md"
@@ -95,8 +95,9 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-# No `python_version`: current mypy no longer type-checks against 3.9, which the
-# package still supports at runtime. Ruff's target-version guards the syntax.
+# `python_version` matches the floor in `requires-python`, so mypy judges the code
+# against the oldest interpreter we promise to run on rather than the newest.
+python_version = "3.10"
 strict = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -104,15 +105,19 @@ files = ["veribai"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "S", "C4", "RUF"]
 ignore = [
     "S101",    # assert — used in tests
-    "UP006",   # keep typing.Dict/List for 3.9 runtime compat
+    # typing.Dict/List and Optional[X] are kept as a STYLE choice now that the floor
+    # is 3.10 — the whole package uses `from __future__ import annotations`, so the
+    # modern spellings would work. Dropping these four is a mechanical rewrite of
+    # every signature, worth doing on its own rather than inside another change.
+    "UP006",
     "UP035",
-    "UP045",   # keep Optional[X] for 3.9 runtime compat
+    "UP045",
     "UP007",
     "RUF002",  # en dashes and accents in prose are deliberate, not typos
     "RUF003",

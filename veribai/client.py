@@ -39,6 +39,11 @@ VAR_ENTORNO = "VERIBAI_ENVIRONMENT"
 class LiveEnvironmentWarning(UserWarning):
     """Raised once when a client is pointed at LIVE.
 
+    The message names *how* LIVE was chosen, because the two paths are not equally
+    alarming: ``environment="live"`` is someone saying so, while
+    ``VERIBAI_ENVIRONMENT=live`` is a deployment deciding it for code that never
+    mentions production.
+
     LIVE has never been deployed as of this release, so the production base URL
     is present but unexercised. Silence it with::
 
@@ -56,17 +61,33 @@ class Client:
     the **Invoicing API**, where the base URL *is* the environment, and the
     **Management API**, one gateway that resolves the environment from the key.
 
-    The environment defaults to TEST. That is deliberate — the cost of
-    accidentally invoicing in the sandbox is a wasted test, and the cost of
-    accidentally invoicing in production is a legally filed tax record.
+    The environment is resolved in this order, and only this order:
+
+    1. the ``environment=`` argument;
+    2. the ``VERIBAI_ENVIRONMENT`` variable;
+    3. ``"test"``.
+
+    TEST last-resort is deliberate — the cost of accidentally invoicing in the
+    sandbox is a wasted test, and the cost of accidentally invoicing in production
+    is a legally filed tax record. But note step 2: ``Client(api_key=...)`` is only
+    sandbox when that variable is unset, so on a dangerous surface say it::
 
         >>> import veribai
-        >>> client = veribai.Client(api_key="...")              # sandbox
+        >>> client = veribai.Client(api_key="...", environment="test")
         >>> client = veribai.Client(api_key="...", environment="live")
+
+    An explicit argument always wins, which is what makes it worth writing.
+    ``client.entorno`` reports the answer and ``client.origen_entorno`` reports
+    where it came from.
 
     With no ``api_key`` the ``VERIBAI_API_KEY`` environment variable is used, and
     ``VERIBAI_ENVIRONMENT`` sets the environment — so the same code moves between
     sandbox and production without an edit.
+
+    A wrong environment is not, by itself, a wrong filing: API keys are issued per
+    environment, so a TEST key sent to ``api.veribai.com`` (or a LIVE key sent to
+    the sandbox) is refused by API Gateway as
+    :class:`~veribai.errors.AuthenticationError` before it reaches VeriBai.
 
     Usable as a context manager to close the underlying connection pool::
 
@@ -92,14 +113,25 @@ class Client:
                 f"an API key is required: pass api_key=... or set {VAR_API_KEY}"
             )
 
-        nombre_entorno = environment or os.environ.get(VAR_ENTORNO) or "test"
+        # Resolution order, and the *source* is kept: a LIVE selected by an
+        # environment variable is the dangerous case, because nothing in the
+        # calling code says "live" and the warning is the only thing that does.
+        if environment is not None:
+            nombre_entorno, origen = environment, "the environment= argument"
+        elif os.environ.get(VAR_ENTORNO):
+            nombre_entorno = os.environ[VAR_ENTORNO]
+            origen = f"the {VAR_ENTORNO} environment variable"
+        else:
+            nombre_entorno, origen = "test", "the default"
         self._entorno = normalize_environment(nombre_entorno)
+        self._origen_entorno = origen
         if self._entorno == LIVE:
             warnings.warn(
-                "VeriBai LIVE selected. As of this release the production "
-                "environment has never been deployed, so calls to api.veribai.com "
-                "may answer 503 ENVIRONMENT_NOT_AVAILABLE. Confirm with "
-                "client.cuenta.obtener() before invoicing.",
+                f"VeriBai LIVE selected by {origen} — invoices filed here are "
+                f"legally binding fiscal records. As of this release the production "
+                f"environment has never been deployed, so calls to api.veribai.com "
+                f"may answer 503 ENVIRONMENT_NOT_AVAILABLE. Confirm with "
+                f"client.cuenta.obtener() before invoicing.",
                 LiveEnvironmentWarning,
                 stacklevel=2,
             )
@@ -141,6 +173,16 @@ class Client:
     def entorno(self) -> str:
         """``"test"`` or ``"live"`` — the API's own vocabulary."""
         return self._entorno
+
+    @property
+    def origen_entorno(self) -> str:
+        """How the environment was chosen: the argument, the variable, or the default.
+
+        ``client.entorno`` says *where* you are; this says *why*. The pair is what
+        you want in a startup log line, because the failure that actually bites is
+        a LIVE nobody wrote down.
+        """
+        return self._origen_entorno
 
     @property
     def es_live(self) -> bool:
