@@ -1,4 +1,4 @@
-"""Alta capacidad (mega-tenant) device registry — ``/v1/clientes/{nif}/dispositivos*``.
+"""Alta capacidad (mega-tenant) device registry: ``/v1/clientes/{nif}/dispositivos*``.
 
 A high-volume taxpayer can run one hash chain **per device** instead of one per
 NIF, which is what lets tills, branches and back-office systems invoice in
@@ -7,11 +7,11 @@ get registered.
 
 Three facts shape every call here:
 
-* a device id **is the key of its own hash chain** — it is never renamed and
+* a device id **is the key of its own hash chain**: it is never renamed and
   never reused, and deregistering only tombstones it;
 * the routes are gated on the **contract phase**, not the chain mode. While the
   account is in ``preparacion`` you register devices and nothing changes about
-  how invoices are routed — that inertness is the point of the window;
+  how invoices are routed, and that inertness is the point of the window;
 * the flip to ``activa`` is staff-driven. You signal readiness with
   :meth:`DispositivosRecurso.solicitar_activacion`.
 """
@@ -39,7 +39,7 @@ class DispositivosRecurso(Recurso):
         are listed with ``activo: false``, never hidden.
 
         While the account is in ``preparacion`` the response also carries
-        ``idsMaquinaVistos`` — the device tags actually seen on invoices since the
+        ``idsMaquinaVistos``: the device tags actually seen on invoices since the
         window opened, so you can reconcile what your systems send against what is
         registered before the flip.
 
@@ -100,7 +100,7 @@ class DispositivosRecurso(Recurso):
         )
 
     def solicitar_activacion(self, nif: str) -> Dict[str, Any]:
-        """Tell VeriBai the preparation is finished — «ya estamos listos».
+        """Tell VeriBai the preparation is finished: «ya estamos listos».
 
         This is the customer half of the activation protocol: it records the
         request on the shared registry, where it is a precondition staff check
@@ -139,7 +139,7 @@ class DispositivosRecurso(Recurso):
         )
 
     def liberar_serie_centralizada(self, nif: str, serie: str) -> Dict[str, Any]:
-        """Release a central-sender reservation — **``preparacion`` only**.
+        """Release a central-sender reservation, **``preparacion`` only**.
 
         Once the account is ``activa`` a reservation is permanent
         (``409 RESERVATION_LOCKED``): the central sender may already have chained

@@ -1,4 +1,4 @@
-"""TicketBAI submission — ``POST/PUT /v1/ticketbai/*`` on the Invoicing API."""
+"""TicketBAI submission: ``POST/PUT /v1/ticketbai/*`` on the Invoicing API."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class TicketbaiRecurso(Recurso):
     advanced, and the response already carries the official ``idTbai`` and its
     QR. Only the submission to the foral hacienda is asynchronous.
 
-    Two consequences. First, the payload is flat — ``serie``, ``numero``,
+    Two consequences. First, the payload is flat: ``serie``, ``numero``,
     ``fechaExpedicion``, ``tipoFactura`` and ``importeTotal`` sit at the top
     level, with no ``cabecera``/``totales`` nesting. Second, ``provincia`` is
     mandatory and must match the emisor's registered hacienda, or the call is a
@@ -30,7 +30,7 @@ class TicketbaiRecurso(Recurso):
         """Sign and register an invoice (``POST /v1/ticketbai/crear``).
 
         Returns ``estado: en_cola`` with ``idTbai``, ``urlValidacion`` and
-        ``qrBase64`` already populated — those are final and stable across
+        ``qrBase64`` already populated, and those are final and stable across
         retries, because a duplicate is replayed rather than re-signed.
 
         A replay of an in-flight duplicate carries ``yaExistente: true`` and no
@@ -51,7 +51,7 @@ class TicketbaiRecurso(Recurso):
         Gipuzkoa is the special case, and the difference is visible in the
         response. Where the hacienda rejected the record for its **content**, the
         correction goes through their ZUZENDU service as an unsigned file
-        referencing the original — so the reply carries ``viaZuzendu: true`` and
+        referencing the original, so the reply carries ``viaZuzendu: true`` and
         keeps the **original** ``idTbai``, validation URL and QR. That is
         deliberate: the customer already has that QR on their invoice, and
         re-signing would invalidate a document already in their hands.
@@ -72,7 +72,7 @@ class TicketbaiRecurso(Recurso):
         alta.
 
         An already-registered or in-flight cancellation replays with ``200`` and
-        ``yaAnulada: true`` — TicketBAI is idempotent here where VeriFactu answers
+        ``yaAnulada: true``. TicketBAI is idempotent here where VeriFactu answers
         ``409 ALREADY_CANCELLED``.
         """
         return dict(

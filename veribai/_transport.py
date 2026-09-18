@@ -7,18 +7,18 @@ The retry rules here are the reason this package exists rather than a page of
 or a ``503 SHARDING_UNAVAILABLE`` proves the server refused the request *before*
 doing anything, so retrying is always safe. A dropped connection proves nothing:
 the invoice may already be signed, chained and queued. Therefore network errors
-are retried **only** on routes VeriBai makes idempotent by identity — the invoice
+are retried **only** on routes VeriBai makes idempotent by identity: the invoice
 routes, where an identical resubmission replays the original record with ``200``
 rather than creating a second one.
 
 That is also why this client does not invent an idempotency key: the
 idempotency is the API's, keyed on (serie, número, fechaExpedicion), and it is
 what makes a retry safe. Change ``importeTotal`` or ``tipoFactura`` between
-attempts and you get ``409 INVOICE_IDENTITY_CONFLICT`` — correctly, because that
+attempts and you get ``409 INVOICE_IDENTITY_CONFLICT``, correctly, because that
 is a different invoice wearing the same number.
 
-Routes that are *not* identity-idempotent — creating a webhook, registering a
-device — are never retried after a network error, because a duplicate would be a
+Routes that are *not* identity-idempotent (creating a webhook, registering a
+device) are never retried after a network error, because a duplicate would be a
 real second object.
 """
 
@@ -69,7 +69,7 @@ class RetryPolicy:
             return float(min(float(retry_after), self.backoff_max))
         base = float(min(self.backoff_base * (2.0 ** (intento - 1)), self.backoff_max))
         if self.jitter:
-            # nosec B311 / noqa: S311 — this spreads retry timing so a fleet of
+            # nosec B311 / noqa: S311. This spreads retry timing so a fleet of
             # workers does not resynchronise after a throttle. It protects nothing.
             return base * (0.5 + random.random() / 2)  # noqa: S311
         return base
@@ -140,7 +140,7 @@ def construir_error(resp: requests.Response) -> errors.APIError:
         return errors.AuthenticationError(
             status,
             None,
-            "the API key is missing, unknown or disabled — API Gateway rejected the "
+            "the API key is missing, unknown or disabled: API Gateway rejected the "
             "request before it reached VeriBai (this is the gateway's 403, which "
             "carries no 'code' field, not an application permission error)",
             payload=cuerpo,
@@ -186,7 +186,7 @@ def _reintentable(err: errors.APIError, idempotente: bool) -> bool:
     if isinstance(err, errors.XmlPersistError):
         # One code, two outcomes. On `crear` the invoice is already signed and the
         # chain link sealed, and retrying answers 409 INVOICE_SIGNING_IN_FLIGHT for
-        # ever — which this client would then dutifully retry too. Only the variant
+        # ever, which this client would then dutifully retry too. Only the variant
         # whose message says nothing was sent may be sent again.
         return err.reintentable
     if err.status in (502, 504):

@@ -4,7 +4,7 @@ name: release
 # and this workflow tags that commit and publishes it. There is no tag to push by hand:
 # the tag is an output of a release, not an input to one.
 #
-# Every other push to main is a no-op here — `v<version>` already exists, so there is
+# Every other push to main is a no-op here: `v<version>` already exists, so there is
 # nothing to release. That check is what makes "merging publishes" safe to say: what
 # triggers a release is the deliberate act of changing the version, not the merge.
 on:
@@ -39,10 +39,10 @@ jobs:
             "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v${version}" >/dev/null 2>&1; then
-            echo "::notice::v${version} is already released — nothing to do."
+            echo "::notice::v${version} is already released, nothing to do."
             echo "release=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::v${version} has never been released — releasing it."
+            echo "::notice::v${version} has never been released, releasing it."
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -54,7 +54,8 @@ jobs:
     uses: ./.github/workflows/test.yml
     permissions:
       contents: read
-    secrets: inherit
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     name: build
@@ -76,14 +77,14 @@ jobs:
     name: publish to PyPI
     needs: [check, build]
     runs-on: ubuntu-latest
-    # Configure Settings → Environments → pypi → Required reviewers to make this job
-    # wait for a human. That control needs a public repository, or a private one on a
-    # paid plan; on a free private repo the environment exists but gates nothing.
+    # Gated on a human: Settings → Environments → pypi → Required reviewers. No run
+    # reaches PyPI credentials until a reviewer approves, and approval comes after the
+    # full suite, the security scan and the build have already passed.
     environment:
       name: pypi
       url: https://pypi.org/p/veribai
     permissions:
-      id-token: write       # OIDC for PyPI Trusted Publishing — no API token exists
+      id-token: write       # OIDC for PyPI Trusted Publishing, no API token exists
       attestations: write   # build provenance, so a published artifact is traceable
       contents: read
     steps:
@@ -111,7 +112,7 @@ jobs:
           path: dist
 
       # Deliberately last. A tag is the record of a release that happened, so an
-      # aborted or rejected publish leaves no tag claiming otherwise — and a re-run
+      # aborted or rejected publish leaves no tag claiming otherwise, and a re-run
       # is then just a re-run rather than a cleanup job.
       - name: Tag the released commit and cut the release
         env:

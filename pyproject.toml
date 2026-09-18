@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "veribai"
-version = "0.1.0"
-description = "Official Python client for the VeriBai API — VeriFactu and TicketBAI invoice submission"
+version = "0.1.1"
+description = "Official Python client for the VeriBai API: VeriFactu and TicketBAI invoice submission"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -45,8 +45,8 @@ classifiers = [
 dependencies = ["requests>=2.25.0"]
 
 [project.urls]
-Homepage = "https://veribai.com"
-Documentation = "https://veribai.com/docs/api"
+Homepage = "https://veribai.com?utm_source=pypi&utm_medium=referral&utm_campaign=python-client&utm_content=pypi-homepage"
+Documentation = "https://veribai.com/docs/api?utm_source=pypi&utm_medium=referral&utm_campaign=python-client&utm_content=pypi-docs"
 Repository = "https://github.com/VeriBai/veribai-python-client"
 Issues = "https://github.com/VeriBai/veribai-python-client/issues"
 Changelog = "https://github.com/VeriBai/veribai-python-client/blob/main/CHANGELOG.md"
@@ -110,9 +110,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "S", "C4", "RUF"]
 ignore = [
-    "S101",    # assert — used in tests
+    "S101",    # assert, used in tests
     # typing.Dict/List and Optional[X] are kept as a STYLE choice now that the floor
-    # is 3.10 — the whole package uses `from __future__ import annotations`, so the
+    # is 3.10, and the whole package uses `from __future__ import annotations`, so the
     # modern spellings would work. Dropping these four is a mechanical rewrite of
     # every signature, worth doing on its own rather than inside another change.
     "UP006",

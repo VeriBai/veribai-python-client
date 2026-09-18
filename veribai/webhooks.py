@@ -2,7 +2,7 @@
 
 This is the part integrators most often get wrong, and the failure is silent:
 the signature is computed over the **raw request bytes**, so deserializing the
-JSON and re-serializing it — which almost every framework tempts you into —
+JSON and re-serializing it (which almost every framework tempts you into)
 produces a different byte string and a signature that will never match.
 
 Delivery is **at-least-once**, and duplicates are normal rather than
@@ -10,7 +10,7 @@ exceptional: an endpoint that answers after the 10-second timeout is scored as
 failed and retried, up to 3 attempts, then a dead-letter queue; 20 consecutive
 failures suspend the webhook. Every retry carries a byte-identical body and the
 same ``idEntrega``, which is a deterministic UUIDv5 of (webhook, invoice, event)
-— never random. So ``idEntrega`` is a sound deduplication key, and the only one
+and never random. So ``idEntrega`` is a sound deduplication key, and the only one
 you need.
 
 Typical use, framework-agnostic::
@@ -48,7 +48,7 @@ EVENTOS = ("factura.registrada", "factura.rechazada", "factura.anulada")
 
 @dataclass(frozen=True)
 class MotivoRechazo:
-    """The tax authority's own verdict on a rejected record — not VeriBai's.
+    """The tax authority's own verdict on a rejected record, not VeriBai's.
 
     Act on ``codigo``: fix the data and resubmit through ``subsanar``. VeriBai
     never auto-retries a rejected record, because the correction is a fiscal
@@ -118,7 +118,7 @@ class Entrega:
 
     @property
     def rechazada(self) -> bool:
-        """The authority REJECTED the record terminally — it is **not** filed.
+        """The authority REJECTED the record terminally: it is **not** filed.
 
         The filing obligation is the taxpayer's, which is why this event cannot
         be excluded from a webhook subscription.
@@ -132,7 +132,7 @@ class Entrega:
 
     @property
     def motivo_rechazo(self) -> Optional[MotivoRechazo]:
-        """Why the authority rejected it — present on ``factura.rechazada`` only."""
+        """Why the authority rejected it, present on ``factura.rechazada`` only."""
         crudo = self.datos.get("motivoRechazo")
         if isinstance(crudo, Mapping):
             return MotivoRechazo.desde(crudo)
@@ -177,7 +177,7 @@ def verificar_firma(secreto: str, cuerpo: Union[bytes, str], firma: Optional[str
         )
     if not hmac.compare_digest(firma_esperada(secreto, cuerpo), firma):
         raise WebhookSignatureError(
-            "signature mismatch — either the secret is wrong, or the body was "
+            "signature mismatch: either the secret is wrong, or the body was "
             "re-serialized before verification (the HMAC covers the RAW bytes, so a "
             "json.loads/json.dumps round-trip invalidates it)"
         )

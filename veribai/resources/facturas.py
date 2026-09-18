@@ -1,4 +1,4 @@
-"""The invoice read surface — ``GET /v1/facturas*`` on the Invoicing API."""
+"""The invoice read surface: ``GET /v1/facturas*`` on the Invoicing API."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class FacturasRecurso(Recurso):
 
     Every read is emisor-scoped: ``nif_emisor`` is required, and a NIF that is
     not yours answers ``403`` with a body byte-identical to the one you would get
-    for a NIF that does not exist. That sameness is deliberate anti-enumeration —
+    for a NIF that does not exist. That sameness is deliberate anti-enumeration,
     do not try to tell the cases apart.
     """
 
@@ -42,7 +42,7 @@ class FacturasRecurso(Recurso):
         """One page of registered invoices (``GET /v1/facturas``).
 
         ``fecha_inicio``/``fecha_fin`` are ISO-8601 bounds on the **registration**
-        date — not the issue date. A value above the maximum ``limite`` is capped
+        date, not the issue date. A value above the maximum ``limite`` is capped
         rather than refused; a non-integer or non-positive one is a 400.
         """
         params = limpiar(
@@ -94,7 +94,7 @@ class FacturasRecurso(Recurso):
         """Find an invoice from its identity when you no longer hold ``idFactura``.
 
         Losing ``idFactura`` otherwise locks you out of ``/qr``, ``/xml``,
-        ``/estado`` and the records — this is the way back in, and it returns the
+        ``/estado`` and the records. This is the way back in, and it returns the
         same envelope as :meth:`obtener`.
 
         Send ``serie`` and ``numero`` separately, never pre-joined: responses
@@ -113,7 +113,7 @@ class FacturasRecurso(Recurso):
         return dict(self._get("/v1/facturas/buscar", params=params).datos)
 
     def estado(self, id_factura: str, *, nif_emisor: str) -> Dict[str, Any]:
-        """Current status (``GET /v1/facturas/{id}/estado``) — the polling endpoint."""
+        """Current status (``GET /v1/facturas/{id}/estado``), the polling endpoint."""
         return dict(
             self._get(
                 f"/v1/facturas/{quote(str(id_factura), safe='')}/estado",
@@ -142,7 +142,7 @@ class FacturasRecurso(Recurso):
 
         Args:
             timeout: seconds to wait before giving up. Giving up is not a
-                failure of the invoice — see :class:`~veribai.errors.VerdictTimeout`.
+                failure of the invoice, see :class:`~veribai.errors.VerdictTimeout`.
             intervalo: seconds between polls. Each poll is one API call against
                 your monthly quota, so prefer a webhook for volume.
             con_detalle: also fetch the full invoice, so a rejection arrives with
@@ -169,7 +169,7 @@ class FacturasRecurso(Recurso):
             restante = limite - time.monotonic()
             if restante <= 0:
                 raise VerdictTimeout(
-                    f"no authority verdict for {id_factura} after {timeout:.0f}s — "
+                    f"no authority verdict for {id_factura} after {timeout:.0f}s. "
                     f"last seen estadoEnvio={ultimo.get('estadoEnvio')!r}. The invoice "
                     f"is accepted and still in flight; resume polling later.",
                     ultimo_estado=ultimo,
@@ -183,7 +183,7 @@ class FacturasRecurso(Recurso):
         decodes the payload back into bytes when the *request* carries
         ``Accept: image/png``; with the ``*/*`` that curl and most HTTP clients
         send by default, the response is still labelled ``image/png`` but the body
-        is the **base64 text** of the PNG — write it to a file and you get an
+        is the **base64 text** of the PNG: write it to a file and you get an
         image that will not open.
 
         So: the header is always sent, and the body is checked for the PNG magic
@@ -218,14 +218,14 @@ class FacturasRecurso(Recurso):
         """The fiscal record as the tax authority received it (``GET …/xml``).
 
         This is the **evidence copy**, with its transport envelope removed and
-        nothing else changed — for TicketBAI the signed document including its
+        nothing else changed. For TicketBAI the signed document including its
         XAdES signature, for VeriFactu this invoice's registro lifted out of the
         SOAP batch. There is deliberately no fallback to the pre-submission
         working copy, so the answer never depends on *when* you ask.
 
         While a submission is in flight there is nothing to serve yet and the API
         answers ``404 SUBMISSION_IN_PROGRESS``, raised here as
-        :class:`~veribai.errors.SubmissionInProgressError` — a distinct class
+        :class:`~veribai.errors.SubmissionInProgressError`, a distinct class
         precisely because it does not mean the invoice is missing.
         """
         respuesta = self._get(
@@ -247,7 +247,7 @@ def _asegurar_png(contenido: bytes) -> bytes:
     try:
         decodificado = base64.b64decode(texto, validate=True)
     except (binascii.Error, ValueError):
-        return contenido  # not base64 either — hand back what we got
+        return contenido  # not base64 either, so hand back what we got
     return decodificado if decodificado.startswith(_PNG_MAGIC) else contenido
 
 

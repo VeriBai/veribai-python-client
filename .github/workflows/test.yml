@@ -8,6 +8,9 @@ on:
   # Called by release.yml, so a release runs the same suite rather than a copy
   # of it that can drift.
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 # Read-only by default. Any job that needs more asks for it explicitly, so a
 # compromised dependency in a test job cannot write to the repository.
@@ -16,7 +19,7 @@ permissions:
 
 # `github.workflow` is the CALLER's name, so a run started by the push and the same
 # suite called from release.yml land in different groups. Keyed on the ref alone they
-# shared one, and a version bump — which fires both on the same commit — had the
+# shared one, and a version bump (which fires both on the same commit) had the
 # release's copy cancel the standalone run. That looked like 15 failed jobs and was
 # only ever a superseded queue entry, so the signal it destroyed was the useful kind.
 concurrency:
@@ -135,7 +138,7 @@ jobs:
         run: uvx twine check --strict dist/*
 
       # Prove the wheel is installable and importable on its own, from a clean
-      # interpreter — not merely that the source tree works.
+      # interpreter, not merely that the source tree works.
       - name: Install the wheel and import it
         run: |
           uv venv /tmp/fresh

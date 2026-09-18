@@ -1,4 +1,4 @@
-"""The client façade — one object, both APIs."""
+"""The client façade: one object, both APIs."""
 
 from __future__ import annotations
 
@@ -67,7 +67,7 @@ class Client:
     2. the ``VERIBAI_ENVIRONMENT`` variable;
     3. ``"test"``.
 
-    TEST last-resort is deliberate — the cost of accidentally invoicing in the
+    TEST last-resort is deliberate, because the cost of accidentally invoicing in the
     sandbox is a wasted test, and the cost of accidentally invoicing in production
     is a legally filed tax record. But note step 2: ``Client(api_key=...)`` is only
     sandbox when that variable is unset, so on a dangerous surface say it::
@@ -81,7 +81,7 @@ class Client:
     where it came from.
 
     With no ``api_key`` the ``VERIBAI_API_KEY`` environment variable is used, and
-    ``VERIBAI_ENVIRONMENT`` sets the environment — so the same code moves between
+    ``VERIBAI_ENVIRONMENT`` sets the environment, so the same code moves between
     sandbox and production without an edit.
 
     A wrong environment is not, by itself, a wrong filing: API keys are issued per
@@ -127,7 +127,7 @@ class Client:
         self._origen_entorno = origen
         if self._entorno == LIVE:
             warnings.warn(
-                f"VeriBai LIVE selected by {origen} — invoices filed here are "
+                f"VeriBai LIVE selected by {origen}. Invoices filed here are "
                 f"legally binding fiscal records. As of this release the production "
                 f"environment has never been deployed, so calls to api.veribai.com "
                 f"may answer 503 ENVIRONMENT_NOT_AVAILABLE. Confirm with "
@@ -150,7 +150,7 @@ class Client:
         self.facturas = FacturasRecurso(self._transport, self._invoicing)
         """Registered invoices: list, detail, status, QR, fiscal XML."""
         self.registros = RegistrosRecurso(self._transport, self._invoicing)
-        """Submission records — where the authority's own verdict lives."""
+        """Submission records: where the authority's own verdict lives."""
         self.cuenta = CuentaRecurso(self._transport, self._invoicing)
         """Key check, plan, billing state and monthly quota."""
 
@@ -158,7 +158,7 @@ class Client:
         self.nif = NifRecurso(self._transport, self._management)
         """AEAT census validation."""
         self.clientes = ClientesRecurso(self._transport, self._management)
-        """Secondary clients — the businesses you invoice for."""
+        """Secondary clients: the businesses you invoice for."""
         self.dispositivos = DispositivosRecurso(self._transport, self._management)
         """Alta capacidad device registry."""
         self.representacion = RepresentacionRecurso(self._transport, self._management)
@@ -171,7 +171,7 @@ class Client:
     # -- introspection ----------------------------------------------------
     @property
     def entorno(self) -> str:
-        """``"test"`` or ``"live"`` — the API's own vocabulary."""
+        """``"test"`` or ``"live"``, the API's own vocabulary."""
         return self._entorno
 
     @property
@@ -200,7 +200,7 @@ class Client:
         """One round trip that proves the key, the network and the plan.
 
         Equivalent to ``client.cuenta.obtener()``; worth running in CI, and not
-        worth running on a timer — it spends quota like any other call.
+        worth running on a timer: it spends quota like any other call.
         """
         return self.cuenta.obtener()
 

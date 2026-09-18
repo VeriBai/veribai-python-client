@@ -9,11 +9,8 @@ Esta biblioteca es la capa de **transporte y ergonomía**. Sabe que un importe v
 cadena decimal y que una fecha es `DD-MM-YYYY`. Deliberadamente **no** sabe si una factura es
 fiscalmente válida.
 
-Esa línea no es manía. Las reglas las fijan la AEAT y tres haciendas forales, cambian, y dos
-de las propias reglas de fechas de VeriBai siguen siendo decisiones abiertas. Un cliente que
-rechazara payloads en local se quedaría desactualizado y empezaría a rechazar facturas que la
-API habría aceptado — y ese es justo el tipo de bug que un integrador no puede esquivar. Así
-que:
+Las reglas las fijan la AEAT y tres haciendas forales, y cambian. Un cliente que rechazara
+payloads en local acabaría rechazando facturas que la API habría aceptado. Así que:
 
 - **Sí**: serialización, reintentos, paginación, mapeo de errores, verificación de webhooks,
   cualquier cosa que elimine una trampa en *cómo se llama* a la API.
@@ -34,23 +31,23 @@ uv run mypy
 
 Ningún test de la suite por defecto puede tocar la red. Todo se simula en la frontera HTTP con
 `responses`. Es una regla dura, no una preferencia: un envío real firma un documento y avanza
-de forma permanente la cadena de hash de un obligado tributario, y eso no es algo que una
+de forma permanente la cadena de hash de un emisor, y eso no es algo que una
 ejecución de tests pueda hacer por accidente. Los tests que necesitan credenciales reales van
 marcados como `integration` y son opcionales.
 
 La cobertura está en el 99% y debe mantenerse por encima del 95%. Más útil que el número:
 cuando arregles un bug, añade el test que lo habría cazado, y escribe el comentario que
 explica **por qué** el comportamiento es el que es. Varios tests existen aquí porque una
-alternativa de aspecto razonable es incorrecta — que un reintento tras un error de red es
+alternativa de aspecto razonable es incorrecta: que un reintento tras un error de red es
 seguro en unas rutas y no en otras, que `aceptada_con_errores` es un estado terminal, que un
-cupo ausente no es un cupo a cero. Esos comentarios son el objetivo, no el adorno.
+cupo ausente no es un cupo a cero. No los borres al refactorizar.
 
 ## Estilo
 
 - `ruff` para lint y formato (100 columnas), `mypy --strict` para tipos.
 - Los nombres de los métodos públicos reflejan los endpoints de la API, y los nombres de campo
   siguen siendo los suyos en español, para que la
-  [documentación de la API](https://veribai.com/docs/api) se traslade aquí
+  [documentación de la API](https://veribai.com/docs/api?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=contributing-api-docs) se traslade aquí
   sin traducción.
 - **Idioma**: la documentación pública va en español (`README.md`, este fichero,
   `CHANGELOG.md`, `SECURITY.md` y `examples/`). El código va en inglés: docstrings,
@@ -85,18 +82,19 @@ release de GitHub.
 
 Lo que dispara una publicación es el acto deliberado de cambiar la versión, no el merge: un
 merge que no toque `version` no publica nada, porque la etiqueta ya existe. La etiqueta es el
-*resultado* de una release, no su entrada — así, si la publicación falla o se rechaza, no
+*resultado* de una release, no su entrada. Así, si la publicación falla o se rechaza, no
 queda una etiqueta afirmando lo contrario.
 
 Si el entorno `pypi` tiene revisores obligatorios configurados (ver abajo), el job de
 publicación se queda esperando en GitHub → **Actions** → **Review deployments → pypi →
 Approve and deploy**.
 
-### Configuración inicial (pendiente)
+### Configuración inicial
 
 **Trusted Publishing de PyPI.** No hay ningún token de API en ninguna parte, por diseño: hay
-que decirle a PyPI que confíe en este workflow. En
-<https://pypi.org/manage/account/publishing/>, añade un *pending publisher*:
+que decirle a PyPI que confíe en este workflow. Ya está configurado y la 0.1.0 se publicó por
+esta vía. Para reconstruirlo, en <https://pypi.org/manage/account/publishing/> se añade un
+*pending publisher* con estos valores:
 
 | Campo | Valor |
 |---|---|
@@ -113,11 +111,15 @@ de publicación.
 **Entorno `pypi` en GitHub.** En Settings → Environments → `pypi`, marca **Required
 reviewers** y añádete. Sin eso, el entorno existe pero no detiene nada.
 
-> ⚠️ Esa opción solo aparece en repositorios **públicos**, o en repositorios privados de una
-> organización con plan de pago. Mientras este repo sea privado en el plan gratuito, el
-> entorno `pypi` no puede exigir aprobación y la publicación es automática. Las demás
-> protecciones (Trusted Publishing, atestaciones, acciones fijadas por SHA, `pip-audit`
-> bloqueante, revisión obligatoria del code owner para llegar a `main`) siguen en pie.
+Está configurado y detiene la publicación: la 0.1.0 esperó aprobación en el paso
+`publish to PyPI` hasta que un revisor la aprobó. Todo lo anterior (matriz completa, lint,
+escaneo de seguridad, build) ya había pasado.
+
+**Permisos del workflow.** En Settings → Actions → General, `Workflow permissions` tiene que
+estar en **Read and write**. Es un techo, no una concesión: cada job declara sus propios
+`permissions:` y solo `tag` pide `contents: write`. Con el valor por defecto `read`, la
+publicación funciona y el `tag` falla con `403 Resource not accessible by integration`, así
+que PyPI acaba con una versión que GitHub no tiene ni etiquetada ni publicada.
 
 **Codecov.** Añade un secreto de repositorio `CODECOV_TOKEN` desde
 <https://app.codecov.io>. Las subidas no bloquean (`fail_ci_if_error: false`), así que la

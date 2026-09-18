@@ -1,4 +1,4 @@
-"""Secondary clients — ``/v1/clientes*`` on the Management API."""
+"""Secondary clients: ``/v1/clientes*`` on the Management API."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class ClientesRecurso(Recurso):
         soft-deleting one decrements it. So an account with inactive rows reports
         fewer used seats than the list has entries, and that is correct.
 
-        The three seat fields are all-or-nothing and **absent** — never ``0`` —
+        The three seat fields are all-or-nothing and **absent** (never ``0``)
         when the org has no cap or the figure could not be read. Treat a missing
         ``limitePlan`` as "no cap known", because ``0`` means "you are at your cap"
         and would hide a create button from an account that has none.
@@ -37,7 +37,7 @@ class ClientesRecurso(Recurso):
         """Just the seat figures, as ``{limite, usados, disponibles}``.
 
         Each is ``None`` when the API omitted it. Never derive the cap from the
-        plan tier — it is overridable per organisation.
+        plan tier: it is overridable per organisation.
         """
         datos = self.listar()
         return {
@@ -53,7 +53,7 @@ class ClientesRecurso(Recurso):
         re-creating your own existing emisor returns ``200`` with the existing row
         (an idempotent replay), and your own NIF held by another account is
         ``409 SELF_CLIENT_CONFLICT``. A third-party NIF that is taken stays an
-        opaque ``400`` in both cases — that opacity is what stops this endpoint
+        opaque ``400`` in both cases, and that opacity is what stops this endpoint
         being an ownership oracle, so do not read a 400 here as "already exists".
 
         ``representante`` is required for ``tipoUsuario="empresa"``;
@@ -88,7 +88,7 @@ class ClientesRecurso(Recurso):
         window and clears the deletion markers.
 
         Note ``entorno`` is present on a real state change and absent when the
-        call was a no-op — do not read it unconditionally.
+        call was a no-op, so do not read it unconditionally.
         """
         if estado not in ("activo", "inactivo"):
             raise ValueError(f"estado must be 'activo' or 'inactivo', got {estado!r}")

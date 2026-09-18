@@ -49,7 +49,7 @@ def main() -> None:
 
         respuesta = client.verifactu.crear(factura)
         id_factura = respuesta["idFactura"]
-        # Aceptada — todavía NO presentada. La AEAT aún no la ha visto.
+        # Aceptada, todavía NO presentada. La AEAT aún no la ha visto.
         print(f"aceptada: {id_factura} estado={respuesta['estado']}")
 
         # El veredicto llega de forma asíncrona; VeriFactu envía en un tick por minuto.
@@ -68,9 +68,9 @@ def main() -> None:
             print("QR guardado en factura-qr.png")
         elif verdicto.requiere_subsanacion:
             # Presentada, pero con errores. No va a cambiar por sí sola.
-            print("ACEPTADA CON ERRORES — hay que enviar una subsanación")
+            print("ACEPTADA CON ERRORES: hay que enviar una subsanación")
         else:
-            print("RECHAZADA — no presentada; la obligación sigue abierta")
+            print("RECHAZADA: no presentada; la obligación sigue abierta")
             for registro in (verdicto.detalle or {}).get("registros", []):
                 codigo = registro.get("codigoRespuestaAeat")
                 if codigo:

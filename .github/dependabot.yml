@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Actions are pinned to SHAs, which means they do not drift — and also that
+  # Actions are pinned to SHAs, which means they do not drift, and also that
   # nothing updates them unless something asks. This is that something.
   - package-ecosystem: github-actions
     directory: "/"

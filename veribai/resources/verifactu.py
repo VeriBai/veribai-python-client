@@ -1,4 +1,4 @@
-"""VeriFactu submission — ``POST/PUT /v1/verifactu/*`` on the Invoicing API."""
+"""VeriFactu submission: ``POST/PUT /v1/verifactu/*`` on the Invoicing API."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ class VerifactuRecurso(Recurso):
     safe, and this client retries them for you.
 
     Change ``importeTotal`` or ``tipoFactura`` between attempts, though, and the
-    API answers ``409 INVOICE_IDENTITY_CONFLICT`` — correctly, because that is a
+    API answers ``409 INVOICE_IDENTITY_CONFLICT``, correctly, because that is a
     different invoice wearing the same number. A genuinely new invoice needs a
     new number.
     """
@@ -27,7 +27,7 @@ class VerifactuRecurso(Recurso):
 
         The response is ``estado: pendiente_proceso``: **accepted, not filed**.
         AEAT is addressed asynchronously by a minute-tick pipeline, so the verdict
-        arrives later — use :meth:`~veribai.resources.facturas.FacturasRecurso.esperar_verdicto`
+        arrives later, so use :meth:`~veribai.resources.facturas.FacturasRecurso.esperar_verdicto`
         or a webhook.
 
         ``Decimal`` amounts and ``date`` objects in the payload are converted to
@@ -65,7 +65,7 @@ class VerifactuRecurso(Recurso):
         """Correct a rejected or incorrect record (``PUT /v1/verifactu/subsanar``).
 
         Send the whole corrected invoice, not a patch. ``serie``, ``numero`` and
-        ``fechaExpedicion`` identify the record and cannot change — a different
+        ``fechaExpedicion`` identify the record and cannot change, and a different
         issue date is a different invoice, not a correction of this one.
 
         ``rechazoPrevio`` is the AEAT tri-state string: ``"N"``, ``"S"``, or
@@ -78,16 +78,16 @@ class VerifactuRecurso(Recurso):
     def anular(self, anulacion: Mapping[str, Any]) -> Dict[str, Any]:
         """Cancel an invoice (``POST /v1/verifactu/anular``).
 
-        VeriFactu nests the target in ``facturaAnulada`` (TicketBAI does not —
+        VeriFactu nests the target in ``facturaAnulada`` (TicketBAI does not:
         its cancel body is flat).
 
         ``sinRegistroPrevio`` says the invoice being cancelled was never reported
-        to AEAT — the onboarding case, where you void a pre-VeriFactu invoice and
+        to AEAT, the onboarding case, where you void a pre-VeriFactu invoice and
         keep the hash chain coherent. Getting it the wrong way round is its own
         409: ``INVOICE_NOT_FOUND`` when it is ``false`` but nothing is on record,
         ``INVOICE_EXISTS`` when it is ``true`` but the invoice *is* on record.
 
-        The response is an envelope — the record is under ``data``.
+        The response is an envelope: the record is under ``data``.
 
         Example::
 

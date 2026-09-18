@@ -1,7 +1,7 @@
 """Cursor pagination.
 
-Every list endpoint uses the same three names — ``limite`` in, ``proximaPagina``
-out, ``cursor`` back in — so one helper covers them all. ``proximaPagina`` is
+Every list endpoint uses the same three names (``limite`` in, ``proximaPagina``
+out, ``cursor`` back in) so one helper covers them all. ``proximaPagina`` is
 ``null`` on the last page.
 
 The cursor is opaque and tenant-bound: pass it back unmodified. A corrupted,
@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional
 class Pagina:
     """One page of a list response.
 
-    ``total`` counts the rows in **this page**, not the tenant's total — a name
+    ``total`` counts the rows in **this page**, not the tenant's total, a name
     that has misled people, so it is exposed as ``total_en_pagina``.
     """
 
@@ -61,7 +61,7 @@ def iterar_paginas(
 ) -> Iterator[Dict[str, Any]]:
     """Walk every page, yielding items.
 
-    ``max_paginas`` is a guard rail, not a limit you normally need — but an
+    ``max_paginas`` is a guard rail, not a limit you normally need, but an
     unbounded loop over a paginated API is the classic way to burn a monthly
     quota, and the quota here is per API key.
     """

@@ -1,7 +1,7 @@
 """Exception hierarchy.
 
 Every failure the API can return is raised as a subclass of :class:`VeriBaiError`,
-carrying the machine-readable ``code`` — **branch on ``code``, never on the HTTP
+carrying the machine-readable ``code``. **Branch on ``code``, never on the HTTP
 status alone**: several statuses multiplex codes that mean completely different
 things (a 409 on ``crear`` is a sharding conflict, on ``anular`` it can be
 ``ALREADY_CANCELLED``, and on ``clientes/crear`` it is a plan-limit or
@@ -9,8 +9,8 @@ self-client conflict).
 
 Two shapes exist on the wire and this module tells them apart:
 
-* an **application error** — JSON with ``code`` and ``message``;
-* a **gateway rejection** — API Gateway answers ``403 {"message": "Forbidden"}``
+* an **application error**: JSON with ``code`` and ``message``;
+* a **gateway rejection**: API Gateway answers ``403 {"message": "Forbidden"}``
   with *no* ``code`` when the API key is missing, unknown or disabled, and
   ``403 {"message": "Missing Authentication Token"}`` for an unknown path. Those
   are surfaced as :class:`AuthenticationError` and :class:`UnknownRouteError`,
@@ -71,7 +71,7 @@ class VerdictTimeout(VeriBaiError):
 # Transport (a request was attempted; no usable HTTP response came back)
 # --------------------------------------------------------------------------
 class TransportError(VeriBaiError):
-    """The request could not be completed — DNS, TLS, connection, timeout.
+    """The request could not be completed: DNS, TLS, connection, timeout.
 
     🚨 A transport error proves **nothing** about whether the server acted. For
     the invoice routes that is survivable, because VeriBai replays an identical
@@ -96,7 +96,7 @@ class APIError(VeriBaiError):
             ``None`` for a gateway rejection that carries no ``code`` field.
         message: the API's human-readable message.
         errors: field-named violation strings, present on ``VALIDATION_ERROR``.
-            These are human-readable prose — **do not parse them**; branch on
+            These are human-readable prose, so **do not parse them**; branch on
             ``code``.
         payload: the full decoded body, for anything not modelled here.
         request_id: the API Gateway request id, worth quoting to support.
@@ -126,7 +126,7 @@ class APIError(VeriBaiError):
 
 
 class ValidationError(APIError):
-    """400 — the request body or a parameter was rejected.
+    """400: the request body or a parameter was rejected.
 
     ``errors`` names the offending fields. Note this also covers rules the tax
     authority imposes (AEAT codes appear inside ``errors``), so a 400 can mean
@@ -135,25 +135,25 @@ class ValidationError(APIError):
 
 
 class SignatureVerificationError(ValidationError):
-    """400 ``SIGNATURE_*`` — an uploaded representation PDF did not verify.
+    """400 ``SIGNATURE_*``: an uploaded representation PDF did not verify.
 
     Raised by :meth:`~veribai.resources.representacion.RepresentacionRecurso.verificar`.
     Branch on ``code`` for the reason, because they call for different actions:
 
-    * ``SIGNATURE_CRYPTO_INVALID`` — the signature does not validate, the document
+    * ``SIGNATURE_CRYPTO_INVALID``: the signature does not validate, the document
       was modified after signing, or it carries no digital signature at all;
-    * ``SIGNATURE_UNTRUSTED_CA`` — not from a recognised Spanish qualified CA;
-    * ``SIGNATURE_REVOKED`` — the signing certificate is revoked;
-    * ``SIGNATURE_CONTENT_MISMATCH`` — the signed text is not the document we
+    * ``SIGNATURE_UNTRUSTED_CA``: not from a recognised Spanish qualified CA;
+    * ``SIGNATURE_REVOKED``: the signing certificate is revoked;
+    * ``SIGNATURE_CONTENT_MISMATCH``: the signed text is not the document we
       generated (or no text could be extracted);
-    * ``SIGNATURE_COMPANY_NIF_MISMATCH`` / ``SIGNATURE_REP_NIF_MISMATCH`` — the
+    * ``SIGNATURE_COMPANY_NIF_MISMATCH`` / ``SIGNATURE_REP_NIF_MISMATCH``: the
       certificate identifies a different company or representative;
-    * ``SIGNATURE_INVALID`` — the family's fallback, when nothing more specific fits.
+    * ``SIGNATURE_INVALID``: the family's fallback, when nothing more specific fits.
     """
 
 
 class CertificateError(ValidationError):
-    """400 ``CERT_ERROR`` — the PKCS#12 could not be loaded.
+    """400 ``CERT_ERROR``: the PKCS#12 could not be loaded.
 
     Wrong file or wrong password; the API does not distinguish them, on purpose.
     """
@@ -163,7 +163,7 @@ class AuthenticationError(APIError):
     """The API key is missing, unknown or disabled.
 
     API Gateway rejects the call before any application code runs, so this
-    arrives as a ``403`` with no ``code`` — not the ``401`` you might expect.
+    arrives as a ``403`` with no ``code``, not the ``401`` you might expect.
     """
 
 
@@ -172,23 +172,23 @@ class UnknownRouteError(APIError):
 
 
 class PaymentRequiredError(APIError):
-    """402 — the organisation's billing is suspended. Mutating routes only."""
+    """402: the organisation's billing is suspended. Mutating routes only."""
 
 
 class ForbiddenError(APIError):
-    """403 — the emisor is not yours, or the environment is not in your plan.
+    """403: the emisor is not yours, or the environment is not in your plan.
 
     🚨 The body is byte-identical whether the NIF is not yours, does not exist,
     or is inactive. That is deliberate anti-enumeration: do not try to tell the
     cases apart from the response.
 
-    On LIVE it also covers ``REPRESENTATION_PENDING`` — the emisor has not
+    On LIVE it also covers ``REPRESENTATION_PENDING``: the emisor has not
     signed its representation mandate yet.
     """
 
 
 class NotFoundError(APIError):
-    """404 — the resource does not exist."""
+    """404: the resource does not exist."""
 
 
 class SubmissionInProgressError(NotFoundError):
@@ -197,13 +197,13 @@ class SubmissionInProgressError(NotFoundError):
     The invoice exists and is being sent to the authority (or is awaiting its
     answer). The evidence copy served by that endpoint is the document the
     authority actually received, so there is nothing to serve yet. Poll
-    ``…/estado`` or retry in a few seconds — this is the machinery working, not
+    ``…/estado`` or retry in a few seconds. This is the machinery working, not
     a missing invoice.
     """
 
 
 class ConflictError(APIError):
-    """409 — the request is well-formed but conflicts with current state."""
+    """409: the request is well-formed but conflicts with current state."""
 
 
 class IdentityConflictError(ConflictError):
@@ -217,31 +217,31 @@ class IdentityConflictError(ConflictError):
 
 
 class SigningInFlightError(ConflictError):
-    """409 ``INVOICE_SIGNING_IN_FLIGHT`` — a rare TicketBAI mid-signature race.
+    """409 ``INVOICE_SIGNING_IN_FLIGHT``: a rare TicketBAI mid-signature race.
 
     Transient: the client retries it automatically.
     """
 
 
 class AlreadyCancelledError(ConflictError):
-    """409 ``ALREADY_CANCELLED`` / ``ALREADY_EXISTS`` — a cancellation already exists."""
+    """409 ``ALREADY_CANCELLED`` / ``ALREADY_EXISTS``: a cancellation already exists."""
 
 
 class ShardingConflictError(ConflictError):
     """409 from Alta capacidad (mega-tenant) routing.
 
-    ``MACHINE_NOT_REGISTERED`` — the ``idMaquina`` sent is not registered for this
-    emisor. ``SERIE_OWNED_BY_OTHER_MACHINE`` — the serie is permanently bound to a
+    ``MACHINE_NOT_REGISTERED`` means the ``idMaquina`` sent is not registered for this
+    emisor. ``SERIE_OWNED_BY_OTHER_MACHINE`` means the serie is permanently bound to a
     different device. Never raised by ordinary single-chain accounts.
     """
 
 
 class ClientLimitReachedError(ConflictError):
-    """409 ``CLIENT_LIMIT_REACHED`` — the plan's secondary-client cap is full."""
+    """409 ``CLIENT_LIMIT_REACHED``: the plan's secondary-client cap is full."""
 
 
 class RepresentationSigningError(ConflictError):
-    """409 ``SIGNING_IN_PROGRESS`` — the client cannot be edited mid-signature.
+    """409 ``SIGNING_IN_PROGRESS``: the client cannot be edited mid-signature.
 
     A representation document has been generated and is out in the world waiting
     for its ``verificar``; editing the row would make the document no longer match
@@ -255,7 +255,7 @@ class RepresentationSigningError(ConflictError):
 
 
 class RateLimitError(APIError):
-    """429 — usage-plan throttle or monthly quota exhausted.
+    """429: usage-plan throttle or monthly quota exhausted.
 
     The quota is **per API key**, not per account, and API Gateway sends no
     ``X-RateLimit-*`` headers on success, so this is the only signal. The client
@@ -269,15 +269,15 @@ class RateLimitError(APIError):
 
 
 class ServerError(APIError):
-    """5xx — something failed on our side."""
+    """5xx: something failed on our side."""
 
 
 class ServiceUnavailableError(ServerError):
-    """503 — temporarily unavailable."""
+    """503: temporarily unavailable."""
 
 
 class ShardingUnavailableError(ServiceUnavailableError):
-    """503 ``SHARDING_UNAVAILABLE`` — the sharding configuration could not be read.
+    """503 ``SHARDING_UNAVAILABLE``: the sharding configuration could not be read.
 
     Retry-safe by construction: the request is never routed unverified, so
     nothing was signed or recorded.
@@ -285,14 +285,14 @@ class ShardingUnavailableError(ServiceUnavailableError):
 
 
 class ChainContentionError(ServiceUnavailableError):
-    """503 ``CHAIN_CONTENTION`` — the emisor's hash chain was under concurrent write.
+    """503 ``CHAIN_CONTENTION``: the emisor's hash chain was under concurrent write.
 
     Retry-safe: nothing was signed or recorded.
     """
 
 
 class EnvironmentNotAvailableError(ServiceUnavailableError):
-    """503 ``ENVIRONMENT_NOT_AVAILABLE`` — the addressed environment is not deployed.
+    """503 ``ENVIRONMENT_NOT_AVAILABLE``: the addressed environment is not deployed.
 
     Not retryable. As of this release LIVE has never been deployed, so a LIVE
     call can legitimately answer this.
@@ -300,13 +300,13 @@ class EnvironmentNotAvailableError(ServiceUnavailableError):
 
 
 class AeatUnavailableError(ServiceUnavailableError):
-    """503 ``AEAT_UNAVAILABLE`` — the AEAT census could not be **reached**.
+    """503 ``AEAT_UNAVAILABLE``: the AEAT census could not be **reached**.
 
     ``payload`` may still carry a cache-served ``resultados`` subset.
 
     Since 2026-09-16 this is scoped to a genuine transport failure, which is what
     makes retrying it meaningful. A NIF the census simply answers *nothing* about
-    — the call succeeded, the entry is just absent from the reply — is no longer
+    (the call succeeded, the entry is just absent from the reply) is no longer
     a 503 for the whole batch: it comes back as an ordinary ``200`` with
     ``estado: no_procesado`` for that entry and real verdicts for the rest. Those
     are never cached, so the next call asks again by itself.
@@ -314,17 +314,17 @@ class AeatUnavailableError(ServiceUnavailableError):
 
 
 class XmlPersistError(ServerError):
-    """500 ``XML_PERSIST_ERROR`` (TicketBAI) — the signed XML could not be stored.
+    """500 ``XML_PERSIST_ERROR`` (TicketBAI): the signed XML could not be stored.
 
     🚨 **One code, two very different situations, and only the message separates
-    them** — so this class reads the message so you do not have to:
+    them**, so this class reads the message so you do not have to:
 
     * on ``subsanar`` / ``anular`` (the ZUZENDU corrected-document paths) nothing
       was signed, sealed or enqueued. The identical retry is safe and is the right
       action; :attr:`reintentable` is ``True`` and the client retries it for you;
     * on ``crear`` the invoice **was** signed and **the hash chain link is sealed**.
-      The signature now exists only in the chain row. Retrying does not fix it —
-      it answers ``409 INVOICE_SIGNING_IN_FLIGHT`` indefinitely — and the account
+      The signature now exists only in the chain row. Retrying does not fix it:
+      it answers ``409 INVOICE_SIGNING_IN_FLIGHT`` indefinitely, and the account
       needs operator repair. :attr:`reintentable` is ``False``; contact support
       rather than looping.
 
@@ -356,7 +356,7 @@ RETRY_SAFE_500_CODES = frozenset(
         "QR_GENERATION_ERROR",
         "INTERNAL_ERROR",
         # Both documented "Retryable" in API_GENERAL.md as of 2026-09-16.
-        # DATABASE_ERROR is the most widely raised of the family — 13 handlers
+        # DATABASE_ERROR is the most widely raised of the family: 13 handlers
         # across the invoicing read surface and the clients surface.
         "DATABASE_ERROR",
         "AUTH_ERROR",

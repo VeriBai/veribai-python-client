@@ -17,7 +17,7 @@ ESTADOS_FACTURA_TERMINALES = frozenset({"registrada", "anulada", "rectificada"})
 
 #: Pipeline values that mean the authority has answered, one way or another.
 #: ``aceptada_con_errores`` belongs here even though it looks like progress:
-#: the record IS filed but carries errors, and it will never change on its own —
+#: the record IS filed but carries errors, and it will never change on its own,
 #: only a subsanación you send supersedes it.
 ESTADOS_ENVIO_TERMINALES = frozenset({"registrada", "rechazada", "aceptada_con_errores"})
 
@@ -40,8 +40,8 @@ class Verdicto:
     """The outcome of a submission, as read from ``GET /v1/facturas/{id}/estado``.
 
     🚨 An HTTP ``200`` from ``crear`` means **accepted for processing**, not
-    **filed with the tax authority**. The authority answers later — seconds for
-    TicketBAI, up to the next minute-tick batch for VeriFactu — and this object is
+    **filed with the tax authority**. The authority answers later (seconds for
+    TicketBAI, up to the next minute-tick batch for VeriFactu) and this object is
     that answer. Ground truth is the authority's own response; nothing else.
     """
 
@@ -75,7 +75,7 @@ class Verdicto:
         """Filed, but with errors the authority wants corrected.
 
         ``aceptada_con_errores``: the record IS on file and will not change by
-        itself. Send a subsanación — do not poll for it to resolve.
+        itself. Send a subsanación, and do not poll for it to resolve.
         """
         return self.estado_envio == "aceptada_con_errores"
 

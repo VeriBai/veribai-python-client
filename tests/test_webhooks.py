@@ -35,7 +35,7 @@ CUERPO = json.dumps(
         },
     },
     ensure_ascii=False,
-    separators=(",", ":"),  # as a server emits it — no incidental whitespace
+    separators=(",", ":"),  # as a server emits it, no incidental whitespace
 ).encode("utf-8")
 
 

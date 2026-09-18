@@ -1,4 +1,4 @@
-"""Account and connectivity — ``GET /v1/cuenta`` on the Invoicing API."""
+"""Account and connectivity: ``GET /v1/cuenta`` on the Invoicing API."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from ._base import Recurso
 class CuentaRecurso(Recurso):
     """Confirms the key works and reports the account's state.
 
-    The call to wire into setup and CI — and only there. It counts against the
+    The call to wire into setup and CI, and only there. It counts against the
     monthly quota like any other call, so it is not a monitoring poll target.
 
     It reports **your account**. It makes no request to the AEAT or the foral
@@ -21,13 +21,13 @@ class CuentaRecurso(Recurso):
         """Key, environment, plan, billing state and quota (``GET /v1/cuenta``).
 
         ``facturacionActiva`` covers billing only. On LIVE an alta has a second,
-        per-emisor gate — the representation mandate must be signed — which this
+        per-emisor gate (the representation mandate must be signed) which this
         endpoint cannot know about because it does not know which emisor you are
         about to invoice for. Check ``estadoRepresentacion`` on the client for that.
 
         ``consumo`` is **absent**, not zeroed, when no figure has been cached yet
         (a brand-new key). Read the absence as "not known", never as "nothing
-        left" — ``restantes: 0`` is what "at your cap" looks like.
+        left": ``restantes: 0`` is what "at your cap" looks like.
         """
         return dict(self._get("/v1/cuenta").datos)
 
@@ -36,13 +36,13 @@ class CuentaRecurso(Recurso):
 
         ``{usadas, restantes, limite, periodo, observadoEn}``. The figure is
         refreshed on a short cycle and the upstream counters lag by minutes on top,
-        so it can be roughly ten minutes behind — ``observadoEn`` says how far.
+        so it can be roughly ten minutes behind, and ``observadoEn`` says how far.
         Treat it as a good guide to how much is left and not as a live counter: it
         cannot tell you whether one specific next call will succeed. The only
         authoritative signal that you have run out is a ``429``.
 
         Note the quota is per **API key**, not per account, and a rotated key
-        inherits the previous key's consumption — rotating does not reset it. That
+        inherits the previous key's consumption, and rotating does not reset it. That
         is also why ``usadas + restantes`` can be *less* than ``limite`` after a
         rotation.
         """

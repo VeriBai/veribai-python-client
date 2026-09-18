@@ -217,7 +217,7 @@ class TestVerdicto:
         assert v.terminal and v.rechazada and not v.registrada
 
     def test_aceptada_con_errores_es_terminal(self, client, mock_http):
-        # It IS filed, and it will never change on its own — only a subsanación
+        # It IS filed, and it will never change on its own: only a subsanación
         # supersedes it. Polling for it to resolve waits for ever.
         self._estado(mock_http, idFactura="F1", estadoEnvio="aceptada_con_errores")
         v = client.facturas.verdicto("F1", nif_emisor="B1")
