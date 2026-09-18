@@ -8,6 +8,9 @@ on:
   # Called by release.yml, so a release runs the same suite rather than a copy
   # of it that can drift.
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 # Read-only by default. Any job that needs more asks for it explicitly, so a
 # compromised dependency in a test job cannot write to the repository.
