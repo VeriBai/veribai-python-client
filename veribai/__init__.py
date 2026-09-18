@@ -1,12 +1,12 @@
-"""VeriBai — official Python client.
+"""VeriBai: official Python client.
 
 VeriBai files invoices under Spain's two electronic-invoicing regimes: VeriFactu
 (AEAT, state-wide) and TicketBAI (the three Basque foral haciendas). This package
 is the programmatic surface of that service.
 
 One thing is worth internalising before anything else. **A 200 from ``crear``
-means accepted, not filed.** VeriBai has taken the invoice, validated it, and —
-for TicketBAI — already signed it and advanced the taxpayer's hash chain. The tax
+means accepted, not filed.** VeriBai has taken the invoice, validated it and,
+for TicketBAI, already signed it and advanced the taxpayer's hash chain. The tax
 authority answers afterwards, and that answer is the one with legal weight. Read
 it from :meth:`~veribai.resources.facturas.FacturasRecurso.esperar_verdicto` or,
 at volume, from a webhook.
@@ -23,7 +23,7 @@ at volume, from a webhook.
 
 The environment resolves in one order: the ``environment=`` argument, then the
 ``VERIBAI_ENVIRONMENT`` variable, then ``"test"``. TEST last-resort is deliberate,
-but note the middle step — a bare ``Client(api_key=...)`` is sandbox only while
+but note the middle step: a bare ``Client(api_key=...)`` is sandbox only while
 that variable is unset, so on a surface this dangerous, say which one you mean.
 An explicit argument always wins, which is what makes it worth writing.
 """

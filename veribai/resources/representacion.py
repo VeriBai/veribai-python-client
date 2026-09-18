@@ -1,4 +1,4 @@
-"""Representation mandate — ``/v1/clientes/{nif}/representacion/*``.
+"""Representation mandate: ``/v1/clientes/{nif}/representacion/*``.
 
 The document by which a secondary client authorises you to file on its behalf.
 On **LIVE** it is a gate, not paperwork: until ``estadoRepresentacion`` reads
@@ -43,8 +43,8 @@ class RepresentacionRecurso(Recurso):
             password: the ``.p12`` password.
 
         The certificate and its password travel to VeriBai over TLS to be used
-        for this one signature. If that is not acceptable to the client — and for
-        many it will not be — sign the PDF on their own machine and upload the
+        for this one signature. If that is not acceptable to the client (and for
+        many it will not be) sign the PDF on their own machine and upload the
         result with :meth:`verificar` instead; the two paths end in the same
         stored mandate.
         """
@@ -70,7 +70,7 @@ class RepresentacionRecurso(Recurso):
         """Current mandate status.
 
         ``firmaEnCurso`` is true while a generated document is waiting for its
-        ``verificar`` — a document is out in the world, unreturned.
+        ``verificar``: a document is out in the world, unreturned.
         """
         return dict(self._get(f"/v1/clientes/{_nif(nif)}/representacion/estado").datos)
 

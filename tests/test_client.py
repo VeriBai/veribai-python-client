@@ -57,7 +57,7 @@ class TestConstruccion:
             assert veribai.Client(api_key="k", environment=alias).entorno == "live"
 
     def test_entorno_desconocido_no_cae_en_ninguno(self):
-        # A typo must not silently pick an environment — least of all LIVE.
+        # A typo must not silently pick an environment, least of all LIVE.
         with pytest.raises(ValueError, match="unknown environment"):
             veribai.Client(api_key="k", environment="producion")
 
@@ -86,8 +86,8 @@ class TestConstruccion:
         assert veribai.Client(api_key="k", environment="test").entorno == "test"
 
     def test_el_aviso_nombra_la_variable_que_eligio_live(self, monkeypatch):
-        # The dangerous path. `Client(api_key=...)` reads as sandbox — the README
-        # said so outright until 2026-09-17 — while a variable set in the
+        # The dangerous path. `Client(api_key=...)` reads as sandbox (the README
+        # said so outright until 2026-09-17) while a variable set in the
         # deployment picks LIVE and nothing in the calling code mentions it. The
         # warning is then the ONLY thing that does, so it has to name the source:
         # "LIVE selected" sends you reading your code, which is not where it is.
@@ -110,8 +110,8 @@ class TestConstruccion:
         # The delta introduced with origen_entorno, kept on purpose. Until
         # 2026-09-17 the resolution was `environment or os.environ.get(...) or
         # "test"`, so a falsy argument fell THROUGH to the variable:
-        # `Client(environment=os.environ.get("MI_ENTORNO", ""))` — an ordinary
-        # way to write it — silently became LIVE whenever VERIBAI_ENVIRONMENT
+        # `Client(environment=os.environ.get("MI_ENTORNO", ""))`, an ordinary
+        # way to write it, silently became LIVE whenever VERIBAI_ENVIRONMENT
         # said so, having been handed an empty string by code that meant TEST.
         # Refusing is the same choice as rejecting a typo: an environment the
         # caller half-specified must not resolve to one they never named.
@@ -157,7 +157,7 @@ class TestEstructura:
             assert getattr(c, nombre)._base == MANAGE, nombre
 
     def test_un_solo_transporte_compartido(self):
-        # One connection pool, one retry policy — not eleven.
+        # One connection pool, one retry policy, not eleven.
         c = veribai.Client(api_key="k")
         assert c.facturas._t is c.clientes._t
 

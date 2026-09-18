@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "veribai"
 version = "0.1.0"
-description = "Official Python client for the VeriBai API — VeriFactu and TicketBAI invoice submission"
+description = "Official Python client for the VeriBai API: VeriFactu and TicketBAI invoice submission"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -110,9 +110,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "S", "C4", "RUF"]
 ignore = [
-    "S101",    # assert — used in tests
+    "S101",    # assert, used in tests
     # typing.Dict/List and Optional[X] are kept as a STYLE choice now that the floor
-    # is 3.10 — the whole package uses `from __future__ import annotations`, so the
+    # is 3.10, and the whole package uses `from __future__ import annotations`, so the
     # modern spellings would work. Dropping these four is a mechanical rewrite of
     # every signature, worth doing on its own rather than inside another change.
     "UP006",

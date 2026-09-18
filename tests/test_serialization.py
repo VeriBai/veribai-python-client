@@ -44,7 +44,7 @@ class TestImporte:
             assert IMPORTE_RE.match(importe(valor)), valor
 
     def test_nunca_notacion_cientifica(self):
-        # Decimal("1E+3") formats as '1E+3' by default — the API refuses that.
+        # Decimal("1E+3") formats as '1E+3' by default, and the API refuses that.
         assert importe(Decimal("1E+3")) == "1000.00"
 
     def test_float_se_rechaza(self):
@@ -178,7 +178,7 @@ class TestPreparar:
         }
 
     def test_none_se_conserva(self):
-        # `eventos: null` is meaningful — it clears a webhook subscription.
+        # `eventos: null` is meaningful: it clears a webhook subscription.
         assert preparar({"eventos": None}) == {"eventos": None}
 
     def test_float_se_rechaza_con_el_campo_nombrado(self):

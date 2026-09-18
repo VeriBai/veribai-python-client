@@ -5,7 +5,7 @@ There are two physical APIs behind one API key:
 * the **Invoicing API**, where the base URL *is* the environment
   (``sandbox.veribai.com`` = TEST, ``api.veribai.com`` = LIVE);
 * the **Management API**, a single gateway that resolves the environment from
-  the key itself — which is why no management call takes an ``entorno``
+  the key itself, which is why no management call takes an ``entorno``
   parameter.
 
 Both are wired from one :class:`~veribai.client.Client`.
@@ -40,14 +40,14 @@ MANAGEMENT_URL = "https://manage-api.veribai.com"
 
 DEFAULT_TIMEOUT = 30.0
 """Seconds. Generous because TicketBAI signs and seals the hash chain
-synchronously at ingress — ``crear`` is not a cheap write."""
+synchronously at ingress: ``crear`` is not a cheap write."""
 
 
 def normalize_environment(environment: str) -> str:
     """Map a user-supplied environment name onto ``test`` or ``live``.
 
     Raises:
-        ValueError: if the name is not recognised. Deliberately strict — a typo
+        ValueError: if the name is not recognised. Deliberately strict, because a typo
             must not silently fall back to LIVE, nor to TEST.
     """
     if not isinstance(environment, str):

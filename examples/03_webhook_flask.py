@@ -3,7 +3,7 @@
     pip install flask
     flask --app examples/03_webhook_flask.py run --port 8000
 
-Flask es lo de menos: los mismos tres pasos valen para cualquier framework — coger los
+Flask es lo de menos: los mismos tres pasos valen para cualquier framework: coger los
 bytes CRUDOS, verificar y deduplicar.
 """
 
@@ -26,7 +26,7 @@ _procesadas: set = set()
 def recibir() -> tuple[str, int]:
     try:
         entrega = veribai.webhooks.parse_entrega(
-            cuerpo=request.get_data(),  # bytes CRUDOS — NO request.json
+            cuerpo=request.get_data(),  # bytes CRUDOS, NO request.json
             cabeceras=request.headers,
             secreto=SECRETO,
         )

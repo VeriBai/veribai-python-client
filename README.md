@@ -1,4 +1,4 @@
-# veribai — cliente de Python
+# veribai: cliente de Python
 
 [![PyPI](https://img.shields.io/pypi/v/veribai.svg)](https://pypi.org/project/veribai/)
 [![Python](https://img.shields.io/pypi/pyversions/veribai.svg)](https://pypi.org/project/veribai/)
@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/VeriBai/veribai-python-client/branch/main/graph/badge.svg)](https://codecov.io/gh/VeriBai/veribai-python-client)
 [![License](https://img.shields.io/pypi/l/veribai.svg)](LICENSE)
 
-Cliente oficial de Python para la API de [VeriBai](https://veribai.com) — envío de facturas
+Cliente oficial de Python para la API de [VeriBai](https://veribai.com): envío de facturas
 bajo los dos regímenes de facturación electrónica españoles: **VeriFactu** (AEAT) y
 **TicketBAI** (las haciendas forales de Álava, Bizkaia y Gipuzkoa).
 
@@ -56,8 +56,8 @@ print(verdicto.registrada, verdicto.csv_aeat)
 
 **Un `200` de `crear` significa _aceptada_, no _presentada_.**
 
-VeriBai ha recibido la factura, la ha validado y —en TicketBAI— ya la ha firmado y ha
-avanzado de forma permanente la cadena de hash del obligado tributario. La autoridad
+VeriBai ha recibido la factura, la ha validado y (en TicketBAI) ya la ha firmado y ha
+avanzado de forma permanente la cadena de hash del emisor. La autoridad
 tributaria responde después, y *esa* respuesta es la que tiene valor legal. VeriFactu se
 envía mediante un proceso que se ejecuta cada minuto; TicketBAI suele responder en segundos.
 
@@ -78,7 +78,7 @@ elif verdicto.requiere_subsanacion:
 ```
 
 En cuanto haya volumen, usa un webhook en lugar de hacer *polling*: cada consulta es una
-llamada más contra un cupo mensual que es **por clave de API**.
+llamada más contra un cupo mensual que es **por clave API**.
 
 ## Qué aporta este paquete frente a usar `requests`
 
@@ -104,13 +104,13 @@ silencio. `veribai.webhooks.parse_entrega` verifica primero, parsea después, y 
 
 **La trampa del QR, resuelta.** API Gateway solo devuelve el PNG como bytes cuando la
 *petición* envía `Accept: image/png`; con el `*/*` que mandan la mayoría de clientes por
-defecto, el cuerpo es el **texto base64** del PNG aunque siga anunciándose como `image/png`
-— lo escribes a un fichero y obtienes una imagen que no abre. `client.facturas.qr()` envía
+defecto, el cuerpo es el **texto base64** del PNG aunque siga anunciándose como `image/png`:
+lo escribes a un fichero y obtienes una imagen que no abre. `client.facturas.qr()` envía
 siempre la cabecera y, aun así, comprueba el número mágico del PNG.
 
 **Errores sobre los que se puede ramificar.** Cada fallo documentado se corresponde con una
 excepción tipada que lleva el `code` de la API. Ramifica por el código, nunca por el estado
-HTTP a secas: un `409` es un conflicto de sharding en `crear`, `ALREADY_CANCELLED` en
+HTTP a secas: un `409` es un conflicto de identidad en `crear`, `ALREADY_CANCELLED` en
 `anular`, y un límite de plan o un conflicto de autoemisor en `clientes/crear`.
 
 Lo que deliberadamente **no** hace es replicar las reglas de validación fiscal. Las fijan
@@ -139,9 +139,9 @@ El entorno se resuelve **en este orden**:
 2. la variable `VERIBAI_ENVIRONMENT`;
 3. `"test"`.
 
-> ⚠️ Por eso `veribai.Client(api_key="...")` es sandbox **sólo si `VERIBAI_ENVIRONMENT` no
-> está definida**. En una superficie peligrosa, dilo: un `environment=` explícito gana
-> siempre, y es lo que hace que merezca la pena escribirlo.
+> Por eso `veribai.Client(api_key="...")` es sandbox **solo si `VERIBAI_ENVIRONMENT` no
+> está definida**. Pasa `environment=` siempre: el argumento gana a la variable, así que es
+> lo único que no depende de cómo esté configurado el entorno donde corre tu código.
 
 El sandbox es el último recurso a propósito: el coste de una factura equivocada en sandbox
 es una prueba desperdiciada, y el de una factura equivocada en producción es un registro
@@ -159,8 +159,8 @@ Y para comprobarlo contra el servidor, `client.cuenta.obtener()` devuelve el `en
 la API deduce de tu propia clave, que es la verdad de referencia.
 
 Un entorno equivocado no es, por sí solo, una factura equivocada: **las claves se emiten por
-entorno**, así que una clave de TEST enviada a `api.veribai.com` —o una de LIVE enviada al
-sandbox— la rechaza API Gateway como `AuthenticationError` antes de llegar a VeriBai.
+entorno**, así que una clave de TEST enviada a `api.veribai.com` (o una de LIVE enviada al
+sandbox) la rechaza API Gateway como `AuthenticationError` antes de llegar a VeriBai.
 
 La configuración también puede venir del entorno, para que el mismo código pase de uno a otro
 sin tocar nada:
@@ -178,7 +178,7 @@ export VERIBAI_ENVIRONMENT=live     # por defecto: test
 ## Superficie de la API
 
 Los nombres de los métodos reflejan los endpoints, y los nombres de campo son los de la
-propia API —en español— así que todo lo que leas en la
+propia API (en español), así que todo lo que leas en la
 [documentación de la API](https://veribai.com/docs/api) se traslada aquí sin
 traducción.
 
@@ -240,8 +240,8 @@ def recibir():
 ```
 
 La entrega es **al menos una vez** y los duplicados son normales. Cada reintento lleva un
-cuerpo idéntico byte a byte y el mismo `idEntrega` —un UUIDv5 determinista de
-(webhook, factura, evento), nunca aleatorio—, así que es una clave de deduplicación sólida.
+cuerpo idéntico byte a byte y el mismo `idEntrega`, un UUIDv5 determinista de
+(webhook, factura, evento) y nunca aleatorio, así que es una clave de deduplicación sólida.
 `factura.rechazada` no se puede excluir de una suscripción: un registro rechazado no se ha
 presentado, y la obligación de presentarlo es del obligado tributario.
 
@@ -261,8 +261,8 @@ except veribai.APIError as exc:
     print(exc.status, exc.code, exc.request_id)
 ```
 
-Ojo: un `403` en la superficie de clave de API normalmente **no** es un problema de permisos.
-API Gateway responde `403 {"message": "Forbidden"}` —sin `code`— cuando la clave falta, es
+Ojo: un `403` en la superficie de clave API normalmente **no** es un problema de permisos.
+API Gateway responde `403 {"message": "Forbidden"}` (sin `code`) cuando la clave falta, es
 desconocida o está deshabilitada. Ese caso se lanza como `AuthenticationError`, para que no
 acabes buscando el error donde no está.
 
@@ -299,7 +299,7 @@ Solo el propietario del repositorio puede hacer merge o publicar; las releases s
 en CI a partir de un commit de `main` que sube la versión, se publican en PyPI mediante OIDC
 (Trusted Publishing, sin ningún token de larga duración) y llevan atestaciones de
 procedencia. Para
-reportar un problema, consulta [SECURITY.md](SECURITY.md) — por favor, no abras una issue
+reportar un problema, consulta [SECURITY.md](SECURITY.md). No abras una issue
 pública para una vulnerabilidad.
 
 La lista de dependencias en tiempo de ejecución es deliberadamente de un solo paquete
@@ -308,4 +308,4 @@ dependencia transitiva es superficie de ataque en la cadena de suministro.
 
 ## Licencia
 
-Apache 2.0 — ver [LICENSE](LICENSE).
+Apache 2.0. Ver [LICENSE](LICENSE).

@@ -1,4 +1,4 @@
-"""AEAT census validation — ``POST /v1/nif/validar`` on the Management API."""
+"""AEAT census validation: ``POST /v1/nif/validar`` on the Management API."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ class NifRecurso(Recurso):
     wrong one answers ``no_identificado``. The same status therefore carries
     different weight depending on the kind of NIF.
 
-    The whole batch — up to 100 entries — costs one AEAT call, and results are
+    The whole batch (up to 100 entries) costs one AEAT call, and results are
     cached, so validating a list is far cheaper than validating one at a time.
     Environment-agnostic: no ``entorno`` anywhere.
     """
@@ -29,8 +29,8 @@ class NifRecurso(Recurso):
         """Validate 1–100 NIFs (``POST /v1/nif/validar``).
 
         Args:
-            nifs: mappings with ``nif`` and ``nombre``. **Both are required** — see
-                below — so a bare NIF string is refused here rather than spending a
+            nifs: mappings with ``nif`` and ``nombre``. **Both are required** (see
+                below) so a bare NIF string is refused here rather than spending a
                 call to be told the same thing.
 
         Returns:
@@ -46,7 +46,7 @@ class NifRecurso(Recurso):
         ``nombre`` is mandatory even though the AEAT ignores it for a CIF, because
         the census cache is keyed on ``(nif, nameHash)``: an entry cached under an
         empty name would later serve ``identificado`` for a DNI/NIE queried with the
-        *wrong* name — the one verdict that must never be wrong.
+        *wrong* name, the one verdict that must never be wrong.
 
         A NIF the census answers nothing about comes back as an ordinary result with
         ``estado: no_procesado``, not as an error for the whole batch. Those are
@@ -61,7 +61,7 @@ class NifRecurso(Recurso):
         for indice, entrada in enumerate(nifs):
             if isinstance(entrada, str):
                 raise ValueError(
-                    f"nifs[{indice}]: a bare NIF string is not enough — the API requires "
+                    f"nifs[{indice}]: a bare NIF string is not enough: the API requires "
                     f"'nombre' on every entry. Pass "
                     f"{{'nif': {entrada!r}, 'nombre': 'RAZÓN SOCIAL'}}. It is required even "
                     f"for a CIF, whose name the AEAT ignores, because the census cache is "

@@ -101,7 +101,7 @@ class TestErrorDeRed:
 
 
 class TestRespuestasDeError:
-    """A status response proves the server refused — which is different evidence."""
+    """A status response proves the server refused, which is different evidence."""
 
     @responses.activate
     def test_429_siempre_se_reintenta(self, sin_dormir):
@@ -192,7 +192,7 @@ class TestRespuestasDeError:
     @responses.activate
     def test_database_error_se_reintenta_aunque_no_sea_idempotente(self, sin_dormir):
         # Documented "Retryable" in API_GENERAL.md, and the most widely raised 500
-        # of the family — 13 handlers across the read and clients surfaces.
+        # of the family: 13 handlers across the read and clients surfaces.
         responses.add(
             responses.POST, f"{SANDBOX}/v1/webhooks", json=error("DATABASE_ERROR"), status=500
         )
@@ -233,7 +233,7 @@ class TestRespuestasDeError:
     def test_xml_persist_error_de_crear_no_se_reintenta(self, sin_dormir):
         # 🚨 Same code, opposite meaning. On `crear` the invoice IS signed and the
         # chain link IS sealed; retrying answers 409 INVOICE_SIGNING_IN_FLIGHT for
-        # ever — which this client would then retry too, burning the whole policy to
+        # ever, which this client would then retry too, burning the whole policy to
         # arrive at a confusing error. It needs operator repair, not a loop.
         url = f"{SANDBOX}/v1/ticketbai/crear"
         responses.add(
@@ -284,7 +284,7 @@ class TestRespuestasDeError:
 class TestMapeoDeErrores:
     @responses.activate
     def test_rechazo_del_gateway_es_problema_de_clave_no_de_permisos(self, sin_dormir):
-        # API Gateway answers 403 {"message": "Forbidden"} — no `code` — when the
+        # API Gateway answers 403 {"message": "Forbidden"} (no `code`) when the
         # key is missing, unknown or disabled. Reading that as a permission
         # problem sends people hunting for the wrong bug.
         responses.add(responses.GET, RUTA, json={"message": "Forbidden"}, status=403)

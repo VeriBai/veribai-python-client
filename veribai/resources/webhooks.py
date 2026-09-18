@@ -1,4 +1,4 @@
-"""Webhook subscriptions — ``/v1/webhooks*`` on the Management API.
+"""Webhook subscriptions: ``/v1/webhooks*`` on the Management API.
 
 Registering an endpoint is only half of it: deliveries do not start until you
 also **link secondary clients** to the webhook with :meth:`WebhooksRecurso.vincular_clientes`.
@@ -38,7 +38,7 @@ class WebhooksRecurso(Recurso):
 
         Args:
             url: must be ``https`` and a public host. Loopback, private ranges,
-                ``.local``/``.internal`` and link-local addresses are refused —
+                ``.local``/``.internal`` and link-local addresses are refused,
                 including ``169.254.169.254``, which is how a webhook becomes an
                 SSRF primitive against cloud metadata.
             secreto: 16–512 characters, yours to choose. It keys the HMAC over the
@@ -46,7 +46,7 @@ class WebhooksRecurso(Recurso):
             eventos: omit to receive everything, which is the default and what
                 most integrations want. ``factura.rechazada`` **cannot** be
                 excluded: a rejected record was not filed, and the filing
-                obligation is the taxpayer's — a list without it is refused.
+                obligation is the taxpayer's, so a list without it is refused.
 
         This call is **not** retried after a network error: a second attempt
         would create a second webhook, and the API has no identity to replay on.
@@ -81,7 +81,7 @@ class WebhooksRecurso(Recurso):
 
         A ``500 PROPAGATION_INCOMPLETE`` means the webhook was updated but some
         client links did not get the change, so deliveries do not yet match what
-        ``GET`` reports. Retry the identical PATCH — it re-propagates.
+        ``GET`` reports. Retry the identical PATCH: it re-propagates.
         """
         return dict(
             self._patch(

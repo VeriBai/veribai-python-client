@@ -3,7 +3,7 @@
     python examples/04_alta_capacidad.py
 
 Un obligado tributario de mucho volumen puede llevar una cadena de hash por dispositivo en
-lugar de una por NIF. La ventana de preparación es donde se registran — y nada del
+lugar de una por NIF. La ventana de preparación es donde se registran, y nada del
 enrutado de facturas cambia hasta que VeriBai pasa la cuenta a `activa`.
 """
 
@@ -25,7 +25,7 @@ def main() -> None:
         print(f"fase: {fase} · modo de cadena: {estado['modoCadena']}")
 
         if fase == "no_contratada":
-            raise SystemExit("Alta capacidad es una opción contratada — habla antes con VeriBai")
+            raise SystemExit("Alta capacidad es una opción contratada: habla antes con VeriBai")
 
         for id_maquina, etiqueta in DISPOSITIVOS.items():
             try:

@@ -8,7 +8,7 @@ o por correo a **soporte@veribai.com**.
 
 Incluye lo que puedas: versión afectada, una reproducción mínima y el impacto que ves.
 Recibirás acuse de recibo en 3 días laborables y una valoración en 10. Si se confirma el
-hallazgo, acordaremos contigo un calendario de divulgación y te acreditaremos en el aviso,
+hallazgo, VeriBai acordará contigo un calendario de divulgación y te acreditará en el aviso,
 salvo que prefieras que no.
 
 ## Versiones soportadas
@@ -17,10 +17,10 @@ Solo la última `0.x` publicada, mientras el paquete siga siendo anterior a la 1
 
 ## Qué se le confía a este paquete
 
-Un integrador le entrega a esta biblioteca una clave de API capaz de **presentar registros
+Un integrador le entrega a esta biblioteca una clave API capaz de **presentar registros
 fiscales** en nombre de empresas reales, y un secreto de webhook que autentica las llamadas
 entrantes. Una release maliciosa podría, por tanto, presentar o suprimir declaraciones
-fiscales, no solo leer datos. Los controles de abajo existen por eso, no por ceremonia.
+fiscales, no solo leer datos. Los controles de abajo existen por eso.
 
 ### Cadena de suministro
 
@@ -61,8 +61,8 @@ fiscales, no solo leer datos. Los controles de abajo existen por eso, no por cer
 
 ### En la propia biblioteca
 
-- La clave de API se envía únicamente como cabecera `x-api-key`, y solo a los hosts de VeriBai
-  con los que se configuró el cliente. Nunca se registra en logs, y `repr()` la censura —
+- La clave API se envía únicamente como cabecera `x-api-key`, y solo a los hosts de VeriBai
+  con los que se configuró el cliente. Nunca se registra en logs, y `repr()` la censura,
   incluso para claves lo bastante cortas como para que mostrar el final fuera mostrar la
   clave.
 - Las firmas de webhook se comparan con `hmac.compare_digest`, y el cuerpo **no se
@@ -75,5 +75,5 @@ fiscales, no solo leer datos. Los controles de abajo existen por eso, no por cer
 
 Las vulnerabilidades del **servicio** VeriBai (la API con la que habla este paquete) también
 van a soporte@veribai.com. Los hallazgos en `requests` o en el propio Python corresponden a
-sus proyectos — aunque, por favor, cuéntanoslo igualmente si este paquete los usa de una
-forma que agrave el problema original.
+sus proyectos. Aun así, repórtalo si este paquete los usa de una forma que agrave el
+problema original.

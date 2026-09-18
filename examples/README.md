@@ -13,7 +13,7 @@ has leído.
 | Fichero | Qué muestra |
 |---|---|
 | [`01_primera_factura.py`](01_primera_factura.py) | Alta VeriFactu, espera del veredicto de la AEAT y lectura del QR |
-| [`02_ticketbai.py`](02_ticketbai.py) | Alta TicketBAI — firmada en la entrada, así que el QR viene en la respuesta |
+| [`02_ticketbai.py`](02_ticketbai.py) | Alta TicketBAI: firmada en la entrada, así que el QR viene en la respuesta |
 | [`03_webhook_flask.py`](03_webhook_flask.py) | Recibir entregas: verificar, deduplicar, actuar |
 | [`04_alta_capacidad.py`](04_alta_capacidad.py) | Registrar dispositivos durante la ventana de preparación |
 

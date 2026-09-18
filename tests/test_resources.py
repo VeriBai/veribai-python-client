@@ -161,7 +161,7 @@ class TestNif:
 
     def test_un_nif_sin_respuesta_del_censo_es_un_200_normal(self, client, mock_http):
         # Since 2026-09-16 a NIF the census answers nothing about is a per-entry
-        # `no_procesado`, not a 503 for the whole batch — the old behaviour told the
+        # `no_procesado`, not a 503 for the whole batch. The old behaviour told the
         # caller to retry a condition no retry can change.
         mock_http.add(
             mock_http.POST,

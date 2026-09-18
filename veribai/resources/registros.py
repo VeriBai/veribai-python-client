@@ -1,4 +1,4 @@
-"""Submission records — ``GET /v1/registros*`` on the Invoicing API."""
+"""Submission records: ``GET /v1/registros*`` on the Invoicing API."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from ._base import Recurso
 class RegistrosRecurso(Recurso):
     """The per-submission ledger: one record per alta, subsanación or anulación.
 
-    This is where the authority's own verdict lives — ``codigoRespuestaAeat`` and
+    This is where the authority's own verdict lives: ``codigoRespuestaAeat`` and
     its description for VeriFactu, ``codigoRespuestaTbai``/``mensajeRespuestaTbai``
     for TicketBAI. The invoice's ``estado`` tells you *that* something was
     rejected; the record tells you *why*.
