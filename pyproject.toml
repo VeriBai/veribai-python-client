@@ -42,7 +42,7 @@ classifiers = [
 
 # Deliberately minimal. This library submits legally binding fiscal records;
 # every transitive dependency is supply-chain surface. `requests` only.
-dependencies = ["requests>=2.25.0"]
+dependencies = ["requests>=2.34.2"]
 
 [project.urls]
 Homepage = "https://veribai.com?utm_source=pypi&utm_medium=referral&utm_campaign=python-client&utm_content=pypi-homepage"
