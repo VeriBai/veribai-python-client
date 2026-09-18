@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.32.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -53,15 +53,15 @@ Changelog = "https://github.com/VeriBai/veribai-python-client/blob/main/CHANGELO
 
 [dependency-groups]
 dev = [
-    "pytest>=7.4",
-    "pytest-cov>=4.1",
-    "responses>=0.24",
-    "freezegun>=1.4",
-    "mypy>=1.8",
-    "types-requests>=2.31",
-    "ruff>=0.6",
-    "bandit>=1.7",
-    "pip-audit>=2.7",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "responses>=0.26.3",
+    "freezegun>=1.5.5",
+    "mypy>=2.3.1",
+    "types-requests>=2.33.0.20260906",
+    "ruff>=0.16.7",
+    "bandit>=1.9.4",
+    "pip-audit>=2.10.1",
 ]
 
 [tool.hatch.build.targets.wheel]
