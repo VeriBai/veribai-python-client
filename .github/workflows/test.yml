@@ -14,8 +14,13 @@ on:
 permissions:
   contents: read
 
+# `github.workflow` is the CALLER's name, so a run started by the push and the same
+# suite called from release.yml land in different groups. Keyed on the ref alone they
+# shared one, and a version bump — which fires both on the same commit — had the
+# release's copy cancel the standalone run. That looked like 15 failed jobs and was
+# only ever a superseded queue entry, so the signal it destroyed was the useful kind.
 concurrency:
-  group: test-${{ github.ref }}
+  group: test-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -60,11 +65,15 @@ jobs:
       # `!cancelled()` rather than `success()`: a run with FAILING tests is precisely the
       # one worth analysing, since that is where a flake shows up. Uploading only on green
       # would hide the data this exists to collect.
+      # `codecov-action` with `report_type: test_results`, not the retired
+      # `test-results-action`: same upload, same SHA as the coverage step above, so
+      # there is one vetted pin for both rather than a second action to keep current.
       - name: Upload test results
         if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' }}
-        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
           files: ./junit.xml
           fail_ci_if_error: false
 
