@@ -34,11 +34,10 @@ fiscales, no solo leer datos. Los controles de abajo existen por eso.
   versión no publica nada. La etiqueta y la release de GitHub se crean *después* de una
   publicación correcta, de modo que una etiqueta siempre corresponde a algo que se publicó
   de verdad.
-- **El job de publicación corre en el entorno `pypi` de GitHub**, que puede exigir la
-  aprobación de una persona con *required reviewers*. Esa protección solo está disponible en
-  repositorios públicos o en planes de pago; mientras este repositorio sea privado en el plan
-  gratuito, el entorno no bloquea nada y llegar a `main` (revisión obligatoria del code owner,
-  ramas protegidas) es la barrera efectiva.
+- **El job de publicación corre en el entorno `pypi` de GitHub, con aprobación humana
+  obligatoria.** Ninguna ejecución obtiene credenciales de PyPI hasta que un revisor la
+  aprueba, y la aprobación es posterior a la suite completa, al análisis de seguridad y al
+  build. Llegar a `main` no basta para publicar.
 - **Cada artefacto lleva atestaciones de procedencia** (*build provenance*), de modo que un
   wheel publicado se puede rastrear hasta la ejecución del workflow y el commit que lo
   produjeron.
@@ -54,8 +53,8 @@ fiscales, no solo leer datos. Los controles de abajo existen por eso.
 
 ### Repositorio
 
-- Solo el propietario puede hacer merge a `main` o `develop`: ramas protegidas, revisión
-  obligatoria del code owner, sin force push, sin borrado de rama e historial lineal.
+- `main` y `develop` son ramas protegidas: revisión obligatoria del code owner, sin force
+  push, sin borrado de rama e historial lineal.
 - Los commits en ramas protegidas deben ir firmados.
 - Las etiquetas de release están protegidas y no se pueden mover una vez publicadas.
 

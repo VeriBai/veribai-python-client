@@ -76,9 +76,9 @@ jobs:
     name: publish to PyPI
     needs: [check, build]
     runs-on: ubuntu-latest
-    # Configure Settings → Environments → pypi → Required reviewers to make this job
-    # wait for a human. That control needs a public repository, or a private one on a
-    # paid plan; on a free private repo the environment exists but gates nothing.
+    # Gated on a human: Settings → Environments → pypi → Required reviewers. No run
+    # reaches PyPI credentials until a reviewer approves, and approval comes after the
+    # full suite, the security scan and the build have already passed.
     environment:
       name: pypi
       url: https://pypi.org/p/veribai

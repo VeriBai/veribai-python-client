@@ -6,7 +6,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
-## [Unreleased]
+## [0.1.1] - 2026-09-18
 
 ### Cambiado
 
@@ -17,6 +17,16 @@ Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios inc
   coincidir texto de mensajes, sí.
 - La descripción del paquete en PyPI pasa a `Official Python client for the VeriBai API:
   VeriFactu and TicketBAI invoice submission`.
+
+### Documentación
+
+- Toda la documentación en español se ha reescrito siguiendo la voz de marca de VeriBai.
+- Corregido en `README.md`: un `409` en `crear` es un conflicto de **identidad**
+  (`INVOICE_IDENTITY_CONFLICT`), no de sharding. `SHARDING_UNAVAILABLE` es un `503`.
+- `CONTRIBUTING.md` afirmaba que el entorno `pypi` de GitHub no puede exigir aprobación en un
+  repositorio privado con plan gratuito. Sí puede: la 0.1.0 esperó a que un revisor la
+  aprobara. Documentado también que `Workflow permissions` tiene que estar en
+  **Read and write**, o el job `tag` falla con `403` después de publicar en PyPI.
 
 ## [0.1.0] - 2026-09-18
 
@@ -93,5 +103,5 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
-[Unreleased]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.0...HEAD
+[0.1.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/VeriBai/veribai-python-client/releases/tag/v0.1.0
