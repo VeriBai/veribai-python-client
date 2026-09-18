@@ -231,7 +231,7 @@ class TestRespuestasDeError:
 
     @responses.activate
     def test_xml_persist_error_de_crear_no_se_reintenta(self, sin_dormir):
-        # 🚨 Same code, opposite meaning. On `crear` the invoice IS signed and the
+        # Same code, opposite meaning. On `crear` the invoice IS signed and the
         # chain link IS sealed; retrying answers 409 INVOICE_SIGNING_IN_FLIGHT for
         # ever, which this client would then retry too, burning the whole policy to
         # arrive at a confusing error. It needs operator repair, not a loop.

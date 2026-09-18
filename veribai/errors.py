@@ -73,7 +73,7 @@ class VerdictTimeout(VeriBaiError):
 class TransportError(VeriBaiError):
     """The request could not be completed: DNS, TLS, connection, timeout.
 
-    🚨 A transport error proves **nothing** about whether the server acted. For
+    A transport error proves **nothing** about whether the server acted. For
     the invoice routes that is survivable, because VeriBai replays an identical
     submission idempotently by (serie, número, fecha); for routes that are not
     identity-idempotent the client deliberately does not retry these.
@@ -178,7 +178,7 @@ class PaymentRequiredError(APIError):
 class ForbiddenError(APIError):
     """403: the emisor is not yours, or the environment is not in your plan.
 
-    🚨 The body is byte-identical whether the NIF is not yours, does not exist,
+    The body is byte-identical whether the NIF is not yours, does not exist,
     or is inactive. That is deliberate anti-enumeration: do not try to tell the
     cases apart from the response.
 
@@ -316,7 +316,7 @@ class AeatUnavailableError(ServiceUnavailableError):
 class XmlPersistError(ServerError):
     """500 ``XML_PERSIST_ERROR`` (TicketBAI): the signed XML could not be stored.
 
-    🚨 **One code, two very different situations, and only the message separates
+    **One code, two very different situations, and only the message separates
     them**, so this class reads the message so you do not have to:
 
     * on ``subsanar`` / ``anular`` (the ZUZENDU corrected-document paths) nothing

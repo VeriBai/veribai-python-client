@@ -39,7 +39,7 @@ ESTADOS_EN_VUELO = frozenset(
 class Verdicto:
     """The outcome of a submission, as read from ``GET /v1/facturas/{id}/estado``.
 
-    🚨 An HTTP ``200`` from ``crear`` means **accepted for processing**, not
+    An HTTP ``200`` from ``crear`` means **accepted for processing**, not
     **filed with the tax authority**. The authority answers later (seconds for
     TicketBAI, up to the next minute-tick batch for VeriFactu) and this object is
     that answer. Ground truth is the authority's own response; nothing else.
