@@ -47,7 +47,7 @@ cupo ausente no es un cupo a cero. No los borres al refactorizar.
 - `ruff` para lint y formato (100 columnas), `mypy --strict` para tipos.
 - Los nombres de los métodos públicos reflejan los endpoints de la API, y los nombres de campo
   siguen siendo los suyos en español, para que la
-  [documentación de la API](https://veribai.com/docs/api) se traslade aquí
+  [documentación de la API](https://veribai.com/docs/api?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=contributing-api-docs) se traslade aquí
   sin traducción.
 - **Idioma**: la documentación pública va en español (`README.md`, este fichero,
   `CHANGELOG.md`, `SECURITY.md` y `examples/`). El código va en inglés: docstrings,

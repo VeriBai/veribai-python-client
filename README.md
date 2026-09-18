@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/VeriBai/veribai-python-client/branch/main/graph/badge.svg)](https://codecov.io/gh/VeriBai/veribai-python-client)
 [![License](https://img.shields.io/pypi/l/veribai.svg)](LICENSE)
 
-Cliente oficial de Python para la API de [VeriBai](https://veribai.com): envío de facturas
+Cliente oficial de Python para la API de [VeriBai](https://veribai.com?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-intro): envío de facturas
 bajo los dos regímenes de facturación electrónica españoles: **VeriFactu** (AEAT) y
 **TicketBAI** (las haciendas forales de Álava, Bizkaia y Gipuzkoa).
 
@@ -179,7 +179,7 @@ export VERIBAI_ENVIRONMENT=live     # por defecto: test
 
 Los nombres de los métodos reflejan los endpoints, y los nombres de campo son los de la
 propia API (en español), así que todo lo que leas en la
-[documentación de la API](https://veribai.com/docs/api) se traslada aquí sin
+[documentación de la API](https://veribai.com/docs/api?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-api-docs) se traslada aquí sin
 traducción.
 
 | Grupo | Métodos |
