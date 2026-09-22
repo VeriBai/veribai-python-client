@@ -19,9 +19,14 @@ class TicketbaiRecurso(Recurso):
     advanced, and the response already carries the official ``idTbai`` and its
     QR. Only the submission to the foral hacienda is asynchronous.
 
-    Two consequences. First, the payload is flat: ``serie``, ``numero``,
-    ``fechaExpedicion``, ``tipoFactura`` and ``importeTotal`` sit at the top
-    level, with no ``cabecera``/``totales`` nesting. Second, ``provincia`` is
+    Two consequences. First, the payload is flatter than VeriFactu's: ``serie``,
+    ``numero``, ``fechaExpedicion``, ``tipoFactura`` and ``importeTotal`` sit at
+    the top level, with no ``cabecera``/``totales`` nesting. Flatter, not flat:
+    :meth:`crear` still requires a nested ``emisor`` object (``nif`` and
+    ``nombre``) and a ``desglose`` list, whose lines are ``baseImponible`` /
+    ``tipoImpositivo`` / ``cuota``, not VeriFactu's ``detalleDesglose`` /
+    ``cuotaRepercutida``. Only :meth:`anular` is genuinely flat, with
+    ``nifEmisor`` at the top level. Second, ``provincia`` is
     mandatory and must match the emisor's registered hacienda, or the call is a
     ``400 PROVINCE_MISMATCH``.
     """

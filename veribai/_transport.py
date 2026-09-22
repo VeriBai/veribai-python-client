@@ -5,7 +5,10 @@ The retry rules here are the reason this package exists rather than a page of
 
 **A status response and a network error are not the same evidence.** A ``429``
 or a ``503 SHARDING_UNAVAILABLE`` proves the server refused the request *before*
-doing anything, so retrying is always safe. A dropped connection proves nothing:
+doing anything, so retrying is always *safe*, though not always *useful*: an
+exhausted monthly quota is refused just as cleanly as a burst throttle and will
+still be exhausted four attempts later, so only the throttle is retried.
+A dropped connection proves nothing:
 the invoice may already be signed, chained and queued. Therefore network errors
 are retried **only** on routes VeriBai makes idempotent by identity: the invoice
 routes, where an identical resubmission replays the original record with ``200``
@@ -63,10 +66,27 @@ class RetryPolicy:
         if self.backoff_base <= 0 or self.backoff_max <= 0:
             raise errors.ConfigurationError("backoff values must be positive")
 
+    def espera_excesiva(self, retry_after: Optional[float]) -> bool:
+        """True when the server's own hint is longer than we are willing to block.
+
+        Silently truncating a ``Retry-After`` to ``backoff_max`` is the wrong
+        answer: a server asking for 60 seconds gets a 20-second nap and a second
+        rejection. When the hint exceeds what this client will sit on, it stops
+        retrying and raises instead, leaving a waiting decision that big to the
+        caller, who is the only one who knows whether it is worth making.
+        """
+        if retry_after is None or not self.respect_retry_after:
+            return False
+        return float(retry_after) > self.backoff_max
+
     def espera(self, intento: int, retry_after: Optional[float] = None) -> float:
-        """Seconds to wait before attempt ``intento + 1`` (1-based ``intento``)."""
+        """Seconds to wait before attempt ``intento + 1`` (1-based ``intento``).
+
+        A server-sent ``retry_after`` is honoured **as sent**, not clamped; use
+        :meth:`espera_excesiva` first to decide whether it is worth waiting at all.
+        """
         if retry_after is not None and self.respect_retry_after:
-            return float(min(float(retry_after), self.backoff_max))
+            return float(retry_after)
         base = float(min(self.backoff_base * (2.0 ** (intento - 1)), self.backoff_max))
         if self.jitter:
             # nosec B311 / noqa: S311. This spreads retry timing so a fleet of
@@ -120,6 +140,21 @@ def _es_rechazo_de_gateway(status: int, cuerpo: Any) -> bool:
     return status == 403 and isinstance(cuerpo, dict) and "code" not in cuerpo
 
 
+#: API Gateway's wording for an exhausted usage-plan quota. Its throttle says
+#: "Too Many Requests" instead, and neither carries a ``code``, so the message is
+#: the only thing that separates a burst you should retry from a monthly cap you
+#: should not. Matched only when no ``code`` is present, so a future VeriBai-coded
+#: 429 is never swept up by a string match.
+_MARCADORES_CUOTA = ("limit exceeded", "quota exceeded")
+
+
+def _es_cuota_agotada(codigo: Optional[str], texto: Optional[str]) -> bool:
+    if codigo is not None or not texto:
+        return False
+    minuscula = texto.lower()
+    return any(marcador in minuscula for marcador in _MARCADORES_CUOTA)
+
+
 def construir_error(resp: requests.Response) -> errors.APIError:
     """Map an error response onto the most specific exception available."""
     cuerpo = _decodificar(resp)
@@ -161,6 +196,7 @@ def construir_error(resp: requests.Response) -> errors.APIError:
     }
     if clase is errors.RateLimitError:
         kwargs["retry_after"] = _retry_after(resp)
+        kwargs["cuota_agotada"] = _es_cuota_agotada(codigo, texto)
     return clase(  # type: ignore[no-any-return]
         status,
         codigo,
@@ -176,7 +212,11 @@ def _reintentable(err: errors.APIError, idempotente: bool) -> bool:
     retry; a partial execution is only safe where the API replays by identity.
     """
     if isinstance(err, errors.RateLimitError):
-        return True  # throttled: nothing ran
+        # Throttled: nothing ran, and the next second clears it. An exhausted
+        # monthly quota also ran nothing, but no wait inside a retry budget of a
+        # few seconds will clear it either: retrying just spends the remaining
+        # attempts to arrive at the same error later.
+        return not err.cuota_agotada
     if isinstance(err, errors.EnvironmentNotAvailableError):
         return False  # LIVE is not deployed; waiting will not deploy it
     if isinstance(err, (errors.ShardingUnavailableError, errors.ChainContentionError)):
@@ -278,9 +318,13 @@ class Transport:
 
             if resp.status_code >= 400:
                 err = construir_error(resp)
-                if intento < self.retry.max_attempts and _reintentable(err, idempotente):
-                    espera = self.retry.espera(intento, getattr(err, "retry_after", None))
-                    self._sleep(espera)
+                sugerido = getattr(err, "retry_after", None)
+                if (
+                    intento < self.retry.max_attempts
+                    and _reintentable(err, idempotente)
+                    and not self.retry.espera_excesiva(sugerido)
+                ):
+                    self._sleep(self.retry.espera(intento, sugerido))
                     continue
                 raise err
 

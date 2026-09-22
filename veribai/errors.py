@@ -255,17 +255,36 @@ class RepresentationSigningError(ConflictError):
 
 
 class RateLimitError(APIError):
-    """429: usage-plan throttle or monthly quota exhausted.
+    """429: usage-plan throttle **or** monthly quota exhausted, two different things.
+
+    A **throttle** is a burst over the per-second rate; the next second clears it,
+    so this client backs off and retries it for you. An exhausted **monthly quota**
+    is not going to clear inside any retry budget, so retrying only spends the
+    remaining attempts and delays the error you were always going to get. The two
+    arrive on the same status, from API Gateway itself, with **no** ``code``
+    field, so ``code`` is ``None`` on both and cannot tell them apart.
+
+    :attr:`cuota_agotada` is the discriminator: ``True`` for the quota, ``False``
+    for a throttle. Branch on it rather than on ``code``, which is the one place
+    this library's "always branch on ``code``" rule has nothing to offer.
 
     The quota is **per API key**, not per account, and API Gateway sends no
-    ``X-RateLimit-*`` headers on success, so this is the only signal. The client
-    backs off and retries automatically; ``retry_after`` carries the server's
-    hint when it sent one.
+    ``X-RateLimit-*`` headers on success, so a 429 is the only authoritative
+    signal that you have run out. ``retry_after`` carries the server's hint when
+    it sent one; when that hint is longer than the policy's ``backoff_max`` the
+    client does not sit on it, it raises and leaves the waiting to you.
     """
 
-    def __init__(self, *args: Any, retry_after: Optional[float] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        retry_after: Optional[float] = None,
+        cuota_agotada: bool = False,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.retry_after = retry_after
+        self.cuota_agotada = cuota_agotada
 
 
 class ServerError(APIError):

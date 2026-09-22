@@ -20,6 +20,15 @@ class CuentaRecurso(Recurso):
     def obtener(self) -> Dict[str, Any]:
         """Key, environment, plan, billing state and quota (``GET /v1/cuenta``).
 
+        ``estadoCuenta`` is ``activa``, ``prueba``, ``pago_pendiente``,
+        ``suspendida``, ``cancelada`` or ``desconocido``. **``pago_pendiente`` is a
+        grace window, not an outage**: it is the week after a failed payment, during
+        which invoicing keeps working and ``facturacionActiva`` stays ``True``. Warn
+        on it, do not halt on it. It turns into ``suspendida`` if the debt is not
+        settled, and only then do mutating calls answer ``402``; reads and evidence
+        never block in any state. ``desconocido`` means the billing state could not
+        be read, not that something is wrong with the account.
+
         ``facturacionActiva`` covers billing only. On LIVE an alta has a second,
         per-emisor gate (the representation mandate must be signed) which this
         endpoint cannot know about because it does not know which emisor you are

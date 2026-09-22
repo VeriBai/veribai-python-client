@@ -43,6 +43,16 @@ class Verdicto:
     **filed with the tax authority**. The authority answers later (seconds for
     TicketBAI, up to the next minute-tick batch for VeriFactu) and this object is
     that answer. Ground truth is the authority's own response; nothing else.
+
+    **The endpoint answers in one of two shapes, and which one arrives is itself
+    information.** Once the invoice is registered it carries ``estadoFactura``
+    (the lifecycle) and no ``estadoEnvio``. While it is still in flight, and when
+    it was rejected (a rejected invoice never becomes a registered entity), it
+    carries ``estadoEnvio`` and no ``estadoFactura``. That is why
+    :attr:`registrada` reads both fields while :attr:`rechazada` and
+    :attr:`requiere_subsanacion` read only ``estado_envio``: those two verdicts
+    exist solely in the second shape. Verified against sandbox on 2026-09-22 on
+    VeriFactu and TicketBAI alike.
     """
 
     id_factura: str
