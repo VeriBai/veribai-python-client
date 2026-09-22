@@ -41,9 +41,22 @@ class TestPoliticaDeReintentos:
         p = RetryPolicy(backoff_base=1.0, backoff_max=100.0, jitter=False)
         assert p.espera(1, retry_after=7.0) == 7.0
 
-    def test_retry_after_tambien_topado(self):
+    def test_retry_after_se_honra_sin_recortar(self):
+        # Truncating the server's hint to backoff_max used to turn "wait 600s"
+        # into a 5s nap and a second rejection. The hint is reported as sent.
         p = RetryPolicy(backoff_base=1.0, backoff_max=5.0, jitter=False)
-        assert p.espera(1, retry_after=600.0) == 5.0
+        assert p.espera(1, retry_after=600.0) == 600.0
+
+    def test_una_espera_mas_larga_que_backoff_max_es_excesiva(self):
+        p = RetryPolicy(backoff_base=1.0, backoff_max=5.0, jitter=False)
+        assert p.espera_excesiva(600.0) is True
+        assert p.espera_excesiva(5.0) is False
+        assert p.espera_excesiva(None) is False
+
+    def test_retry_after_se_ignora_si_la_politica_lo_dice(self):
+        p = RetryPolicy(backoff_base=1.0, backoff_max=5.0, jitter=False, respect_retry_after=False)
+        assert p.espera_excesiva(600.0) is False
+        assert p.espera(1, retry_after=600.0) == 1.0
 
     def test_jitter_mantiene_la_espera_en_rango(self):
         p = RetryPolicy(backoff_base=4.0, backoff_max=100.0, jitter=True)
@@ -104,12 +117,48 @@ class TestRespuestasDeError:
     """A status response proves the server refused, which is different evidence."""
 
     @responses.activate
-    def test_429_siempre_se_reintenta(self, sin_dormir):
-        # Throttled means nothing executed, on any route.
+    def test_429_por_throttle_se_reintenta(self, sin_dormir):
+        # Throttled means nothing executed, on any route, and the next second clears it.
         responses.add(responses.POST, f"{SANDBOX}/v1/webhooks", json=error("TOO_MANY"), status=429)
         responses.add(responses.POST, f"{SANDBOX}/v1/webhooks", json={"ok": True}, status=201)
         r = transporte(sin_dormir).request("POST", SANDBOX, "/v1/webhooks", json={})
         assert r.datos == {"ok": True}
+
+    @responses.activate
+    def test_429_por_cuota_agotada_no_se_reintenta(self, sin_dormir):
+        # API Gateway says "Limit Exceeded" with no code when the MONTHLY quota is
+        # gone. Nothing ran, so a retry is safe, but no wait inside a few seconds
+        # will clear a monthly cap: retrying only spends the remaining attempts.
+        for _ in range(3):
+            responses.add(responses.GET, RUTA, json={"message": "Limit Exceeded"}, status=429)
+        with pytest.raises(errors.RateLimitError) as exc:
+            transporte(sin_dormir).request("GET", SANDBOX, "/v1/facturas")
+        assert exc.value.cuota_agotada is True
+        assert exc.value.code is None  # the gateway sends none; branch on cuota_agotada
+        assert len(responses.calls) == 1
+        assert sin_dormir.esperas == []
+
+    @responses.activate
+    def test_un_429_con_code_propio_nunca_se_lee_como_cuota(self, sin_dormir):
+        # A coded 429 is VeriBai's own, not the gateway's cap, whatever it says.
+        responses.add(responses.GET, RUTA, json=error("TOO_MANY", "limit exceeded"), status=429)
+        responses.add(responses.GET, RUTA, json={"facturas": []})
+        transporte(sin_dormir).request("GET", SANDBOX, "/v1/facturas")
+        assert len(responses.calls) == 2
+
+    @responses.activate
+    def test_un_retry_after_mas_largo_que_backoff_max_no_se_espera(self, sin_dormir):
+        # Napping backoff_max and asking again just earns a second rejection; a wait
+        # that long is the caller's decision, so the error is raised with the hint.
+        responses.add(
+            responses.GET, RUTA, json=error("TOO_MANY"), status=429, headers={"Retry-After": "600"}
+        )
+        t = transporte(sin_dormir, retry=RetryPolicy(max_attempts=3, backoff_max=20.0))
+        with pytest.raises(errors.RateLimitError) as exc:
+            t.request("GET", SANDBOX, "/v1/facturas")
+        assert exc.value.retry_after == 600.0
+        assert len(responses.calls) == 1
+        assert sin_dormir.esperas == []
 
     @responses.activate
     def test_429_respeta_retry_after(self, sin_dormir):

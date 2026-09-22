@@ -308,9 +308,9 @@ class TestRegistros:
 class TestCuenta:
     def test_obtener(self, client, mock_http):
         mock_http.add(
-            mock_http.GET, f"{SANDBOX}/v1/cuenta", json={"entorno": "test", "plan": "minimum"}
+            mock_http.GET, f"{SANDBOX}/v1/cuenta", json={"entorno": "test", "plan": "sandbox"}
         )
-        assert client.cuenta.obtener()["plan"] == "minimum"
+        assert client.cuenta.obtener()["plan"] == "sandbox"
 
     def test_consumo_presente(self, client, mock_http):
         mock_http.add(
