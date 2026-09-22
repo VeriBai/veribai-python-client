@@ -6,6 +6,69 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.2.0] - 2026-09-22
+
+Primera batería de pruebas contra el entorno TEST real, ejecutada el 2026-09-22 instalando el
+paquete publicado en PyPI. Todo lo funcional pasó: alta, verdicto, QR, XML, anulación,
+paginación, idempotencia y firma de webhooks, en VeriFactu y en TicketBAI. Los cambios de
+abajo son lo que esa sesión dejó al descubierto.
+
+### Añadido
+
+- **`RateLimitError.cuota_agotada`**, que separa las dos situaciones distintas que comparten
+  el `429`. Un *throttle* es una ráfaga por encima del límite por segundo y se despeja al
+  segundo siguiente; un cupo mensual agotado seguirá agotado cuatro intentos después. Las dos
+  llegan de API Gateway **sin campo `code`**, así que `code` vale `None` en ambas y no las
+  distingue: este es el único sitio de la biblioteca donde la regla de «ramifica siempre por
+  `code`» no tiene nada que ofrecer, y `cuota_agotada` es lo que hay que mirar en su lugar.
+  Solo se deduce cuando no hay `code`, de modo que un `429` propio de VeriBai con su código
+  nunca se confunde con el tope de la pasarela.
+- **`RetryPolicy.espera_excesiva()`**, que responde si la espera que pide el servidor es más
+  larga de lo que el cliente está dispuesto a bloquear.
+
+### Cambiado
+
+- **Un `429` por cupo mensual agotado ya no se reintenta.** Antes se reintentaba cualquier
+  `429`, así que agotar el cupo gastaba los cuatro intentos y unos tres segundos y medio para
+  llegar al mismo error. Nada se había ejecutado, así que reintentar era *seguro*, pero no
+  *útil*. Un *throttle* se sigue reintentando igual que siempre.
+- **Un `Retry-After` ya no se recorta a `backoff_max`.** Recortarlo en silencio convertía un
+  «espera 600 segundos» en una siesta de 20 y un segundo rechazo. Ahora `espera()` devuelve la
+  cifra tal cual la envió el servidor y, cuando supera `backoff_max`, el cliente **deja de
+  reintentar y lanza la excepción** con `retry_after` intacto: una espera así de larga es una
+  decisión de quien llama, que es el único que sabe si le compensa. Es el único cambio de esta
+  entrega que se puede notar desde fuera.
+
+### Documentación
+
+- **El cursor de paginación es opaco, y ahora el docstring lo dice entero.** El backend lo
+  selló el 2026-09-22: era base64 legible y ahora es un token cifrado, ligado al inquilino, al
+  *endpoint* y al entorno que lo emitió, y **caduca a las 24 horas**. Documentado que no se
+  inspecciona ni se construye, que no se guarda entre ejecuciones (para reanudar, re-derive la
+  posición con `fecha_inicio`/`fecha_fin`, nunca con un cursor almacenado) y que no se lleva de
+  un *endpoint*, un entorno o una cuenta a otra. La lista de causas de `400 INVALID_CURSOR`
+  estaba incompleta: faltaban «caducado» y «emitido para otro sitio». El cliente ya trataba el
+  cursor como opaco, así que el sellado no rompió nada.
+- **`Verdicto` explica las dos formas en que responde `GET /v1/facturas/{id}/estado`**, que es
+  lo que más confusión causó durante las pruebas. Una factura registrada trae `estadoFactura` y
+  **no** `estadoEnvio`; una en vuelo, y una rechazada (porque una factura rechazada nunca llega
+  a ser una entidad registrada), traen `estadoEnvio` y **no** `estadoFactura`. Por eso
+  `registrada` mira los dos campos y `rechazada` solo mira `estado_envio`. Verificado contra
+  sandbox en los dos sistemas fiscales.
+- **`ticketbai`: el cuerpo es *más plano* que el de VeriFactu, no plano.** El docstring decía
+  «plano» a secas, y eso solo vale para `anular`. `crear` exige un `emisor` anidado (`nif` y
+  `nombre`) y una lista `desglose` cuyas líneas son `baseImponible`/`tipoImpositivo`/`cuota`,
+  no el `detalleDesglose`/`cuotaRepercutida` de VeriFactu.
+- **`cuenta.obtener()` enumera los valores de `estadoCuenta`** y avisa de que
+  `pago_pendiente` es una ventana de gracia, no un corte: es la semana posterior a un impago,
+  durante la cual se sigue facturando y `facturacionActiva` sigue en `True`. Solo `suspendida`
+  bloquea las llamadas que mutan, con un `402`; las lecturas no se bloquean en ningún estado.
+  `desconocido` significa que no se pudo leer el estado, no que pase algo malo.
+- Los nombres de los planes se renombraron en el backend el 2026-09-21 (`test` a `sandbox`,
+  `minimum` a `esencial`, `premium` a `plataforma`, `enterprise` a `dedicado`). El cliente no
+  fija ninguno: `plan` y `estadoCuenta` viajan tal cual, así que no hizo falta tocar código.
+  Solo se actualizó un *fixture* de prueba que todavía decía `minimum`.
+
 ## [0.1.1] - 2026-09-18
 
 ### Cambiado
@@ -103,5 +166,6 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.2.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/VeriBai/veribai-python-client/releases/tag/v0.1.0

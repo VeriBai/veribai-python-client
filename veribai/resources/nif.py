@@ -12,7 +12,7 @@ Entrada = Union[str, Mapping[str, Any]]
 class NifRecurso(Recurso):
     """Check NIFs against the AEAT census before you invoice against them.
 
-    🚨 **``identificado`` means the NIF exists in the census. It does not mean the
+    **``identificado`` means the NIF exists in the census. It does not mean the
     name you sent is right.** For a **CIF** the AEAT ignores the queried name
     entirely: send ``B26682641`` with ``nombre="Pepita SL"`` and you still get
     ``identificado``, with the real razón social in ``nombreCenso``. Comparing the

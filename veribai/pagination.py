@@ -4,9 +4,28 @@ Every list endpoint uses the same three names (``limite`` in, ``proximaPagina``
 out, ``cursor`` back in) so one helper covers them all. ``proximaPagina`` is
 ``null`` on the last page.
 
-The cursor is opaque and tenant-bound: pass it back unmodified. A corrupted,
-truncated or hand-edited one is a ``400 INVALID_CURSOR``, and the fix is to drop
-it and start from the first page, never to repair it.
+**The cursor is an opaque token: pass it back unmodified, and never build one.**
+Its format is not part of the API contract and has already changed once: it was
+readable base64 until 2026-09-22 and is an encrypted token now. Code that decoded
+or hand-assembled a cursor broke on that change; code that passed it back
+untouched did not.
+
+It is bound to the **tenant, the endpoint and the environment** that issued it,
+and it **expires 24 hours after issue**. A cursor is therefore good for walking a
+list you are reading right now, and for nothing else:
+
+* do not persist one between runs, and do not hand one to a long-lived job. To
+  resume a walk later, re-derive the position from a filter you control
+  (``fecha_inicio``/``fecha_fin`` on ``facturas.listar``), never from a stored
+  cursor;
+* do not carry one between list endpoints, between TEST and LIVE, or between
+  accounts.
+
+Every one of those is ``400 INVALID_CURSOR``: corrupted, truncated, hand-edited,
+**expired**, or minted for a different endpoint, environment or account. One code
+covers ``/v1/facturas``, ``/v1/registros``, ``/v1/clientes`` and ``/v1/webhooks``.
+Retrying the same cursor never succeeds, so the fix is always to drop it and start
+from the first page, never to repair it.
 """
 
 from __future__ import annotations
