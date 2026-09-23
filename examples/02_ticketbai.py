@@ -30,7 +30,7 @@ def main() -> None:
             "fechaExpedicion": date.today(),
             "tipoFactura": "F1",
             "importeTotal": Decimal("121.00"),
-            "destinatario": {"nif": "B98765432", "nombre": "Cliente Ejemplo SL"},
+            "destinatario": {"nif": "B00000000", "nombre": "CLIENTE, SL"},
             "desglose": [
                 {
                     "baseImponible": Decimal("100.00"),

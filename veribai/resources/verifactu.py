@@ -45,7 +45,7 @@ class VerifactuRecurso(Recurso):
                     "tipoFactura": "F1",
                     "descripcion": "Servicios de consultoría",
                 },
-                "destinatario": {"nif": "B98765432", "nombre": "Cliente SL"},
+                "destinatario": {"nif": "B00000000", "nombre": "CLIENTE, SL"},
                 "detalleDesglose": [{
                     "claveRegimen": "01",
                     "calificacionOperacion": "S1",
