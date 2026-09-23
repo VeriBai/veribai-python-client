@@ -9,7 +9,7 @@ import time
 from typing import Any, Dict, Iterator, Optional, Union
 from urllib.parse import quote
 
-from ..errors import VerdictTimeout
+from ..errors import VerdictTimeout, VeriBaiError
 from ..models import Verdicto
 from ..pagination import Pagina, construir_pagina, iterar_paginas
 from ..serialization import fecha as _fecha
@@ -179,31 +179,20 @@ class FacturasRecurso(Recurso):
     def qr(self, id_factura: str, *, nif_emisor: str) -> bytes:
         """The invoice QR as PNG **bytes** (``GET /v1/facturas/{id}/qr``).
 
-        There is a trap here that this method exists to absorb. API Gateway only
-        decodes the payload back into bytes when the *request* carries
-        ``Accept: image/png``; with the ``*/*`` that curl and most HTTP clients
-        send by default, the response is still labelled ``image/png`` but the body
-        is the **base64 text** of the PNG: write it to a file and you get an
-        image that will not open.
+        The API answers JSON, ``{"qrBase64": ..., "urlValidacion": ...}``; this
+        decodes ``qrBase64`` so you get bytes you can write to disk. The image is
+        rendered on demand from the invoice's stored validation URL and is
+        byte-identical to the ``qrBase64`` returned when the invoice was created.
 
-        So: the header is always sent, and the body is checked for the PNG magic
-        number and base64-decoded if it is not there. Either way you get bytes
-        you can write to disk.
-
-        The image is rendered on demand from the invoice's stored validation URL
-        and is byte-identical to the ``qrBase64`` returned when the invoice was
-        created.
+        Raises:
+            VeriBaiError: ``qrBase64`` is missing or does not decode to a PNG.
         """
         respuesta = self._get(
             f"/v1/facturas/{quote(str(id_factura), safe='')}/qr",
             params={"nifEmisor": nif_emisor},
-            accept="image/png",
-            binario=True,
         )
-        contenido = respuesta.datos
-        if not isinstance(contenido, (bytes, bytearray)):  # pragma: no cover - defensive
-            contenido = bytes(str(contenido), "utf-8")
-        return _asegurar_png(bytes(contenido))
+        datos = respuesta.datos if isinstance(respuesta.datos, dict) else {}
+        return _decodificar_png(datos.get("qrBase64"))
 
     def guardar_qr(
         self, id_factura: str, *, nif_emisor: str, ruta: Union[str, os.PathLike[str]]
@@ -237,18 +226,17 @@ class FacturasRecurso(Recurso):
         return bytes(respuesta.datos).decode("utf-8")
 
 
-def _asegurar_png(contenido: bytes) -> bytes:
-    """Return PNG bytes whether the gateway sent bytes or base64 text."""
-    if contenido.startswith(_PNG_MAGIC):
-        return contenido
-    texto = contenido.strip()
-    if texto.startswith(b"data:"):  # tolerate a data URI just in case
-        _, _, texto = texto.partition(b",")
+def _decodificar_png(qr_base64: Any) -> bytes:
+    """Decode ``qrBase64`` and check it really is a PNG."""
+    if not isinstance(qr_base64, str) or not qr_base64:
+        raise VeriBaiError("the QR response carries no qrBase64")
     try:
-        decodificado = base64.b64decode(texto, validate=True)
-    except (binascii.Error, ValueError):
-        return contenido  # not base64 either, so hand back what we got
-    return decodificado if decodificado.startswith(_PNG_MAGIC) else contenido
+        png = base64.b64decode(qr_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise VeriBaiError("qrBase64 is not valid base64") from exc
+    if not png.startswith(_PNG_MAGIC):
+        raise VeriBaiError("qrBase64 does not decode to a PNG")
+    return png
 
 
 __all__ = ["FacturasRecurso"]

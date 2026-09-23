@@ -59,7 +59,7 @@ class Client:
 
     One API key authenticates both physical APIs, and this object wires both:
     the **Invoicing API**, where the base URL *is* the environment, and the
-    **Management API**, one gateway that resolves the environment from the key.
+    **Management API**, one URL that resolves the environment from the key.
 
     The environment is resolved in this order, and only this order:
 
@@ -86,8 +86,7 @@ class Client:
 
     A wrong environment is not, by itself, a wrong filing: API keys are issued per
     environment, so a TEST key sent to ``api.veribai.com`` (or a LIVE key sent to
-    the sandbox) is refused by API Gateway as
-    :class:`~veribai.errors.AuthenticationError` before it reaches VeriBai.
+    the sandbox) is refused as :class:`~veribai.errors.AuthenticationError`.
 
     Usable as a context manager to close the underlying connection pool::
 

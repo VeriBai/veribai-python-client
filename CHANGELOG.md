@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.2.1] - 2026-09-23
+
+### Cambiado
+
+- **`client.facturas.qr()` usa la nueva respuesta JSON de la API.** `GET /v1/facturas/{id}/qr`
+  ya no devuelve un cuerpo binario `image/png`, sino `{"qrBase64": ..., "urlValidacion": ...}`,
+  con los mismos campos que la respuesta de alta. El método sigue devolviendo los bytes del
+  PNG y ahora lanza `VeriBaiError` si `qrBase64` falta o no es un PNG. Ya no se envía
+  `Accept: image/png`.
+- `qrBase64` es base64 sin prefijo `data:`, tanto aquí como en las respuestas de alta.
+
 ## [0.2.0] - 2026-09-22
 
 Primera batería de pruebas contra el entorno TEST real, ejecutada el 2026-09-22 instalando el
@@ -18,11 +29,11 @@ abajo son lo que esa sesión dejó al descubierto.
 - **`RateLimitError.cuota_agotada`**, que separa las dos situaciones distintas que comparten
   el `429`. Un *throttle* es una ráfaga por encima del límite por segundo y se despeja al
   segundo siguiente; un cupo mensual agotado seguirá agotado cuatro intentos después. Las dos
-  llegan de API Gateway **sin campo `code`**, así que `code` vale `None` en ambas y no las
+  llegan **sin campo `code`**, así que `code` vale `None` en ambas y no las
   distingue: este es el único sitio de la biblioteca donde la regla de «ramifica siempre por
   `code`» no tiene nada que ofrecer, y `cuota_agotada` es lo que hay que mirar en su lugar.
   Solo se deduce cuando no hay `code`, de modo que un `429` propio de VeriBai con su código
-  nunca se confunde con el tope de la pasarela.
+  nunca se confunde con el cupo de la clave.
 - **`RetryPolicy.espera_excesiva()`**, que responde si la espera que pide el servidor es más
   larga de lo que el cliente está dispuesto a bloquear.
 
@@ -125,16 +136,16 @@ producción todavía no se ha ejercitado.
 - **Serialización de `Decimal`/`date`/`time`** a los formatos exactos que definen los esquemas
   de la AEAT y de TicketBAI. `float` se rechaza para importes; los importes nunca se redondean
   en silencio.
-- **La trampa del QR en base64, resuelta**: se envía siempre `Accept: image/png`, y el cuerpo
-  se decodifica igualmente si la pasarela devolvió texto base64.
+- **QR siempre como bytes PNG**: se envía `Accept: image/png` y, si el cuerpo llega como
+  texto base64, se decodifica igualmente.
 - **Validación de NIF contra el censo de la AEAT**, con `nombre` obligatorio en cada entrada:
   una cadena suelta se rechaza en local, con un `ValueError` que explica el motivo, en vez de
   gastar una llamada del cupo para recibir un `400`. Es obligatorio incluso para un CIF, cuyo
   nombre la AEAT ignora, porque la caché del censo se indexa por `(nif, nombre)`. Ojo:
   `identificado` significa que el NIF **existe**, no que el nombre enviado sea correcto. Para
   un CIF la razón social real vuelve en `nombreCenso` y compararla es cosa tuya.
-- **Excepciones tipadas para cada código de error documentado**, incluido el `403` de API
-  Gateway que en realidad significa «clave API desconocida» y no «sin permiso». Entre
+- **Excepciones tipadas para cada código de error documentado**, incluido el `403` sin
+  `code` que en realidad significa «clave API desconocida» y no «sin permiso». Entre
   ellas: `XmlPersistError`, que separa las dos situaciones opuestas que comparte el
   `500 XML_PERSIST_ERROR` de TicketBAI: en `subsanar`/`anular` no se firmó ni se encoló nada y
   el reintento es correcto; en `crear` la factura **ya está firmada y el eslabón de la cadena
@@ -166,6 +177,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.2.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/VeriBai/veribai-python-client/releases/tag/v0.1.0

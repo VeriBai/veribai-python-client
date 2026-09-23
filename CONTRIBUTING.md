@@ -13,7 +13,7 @@ Las reglas las fijan la AEAT y tres haciendas forales, y cambian. Un cliente que
 payloads en local acabaría rechazando facturas que la API habría aceptado. Así que:
 
 - **Sí**: serialización, reintentos, paginación, mapeo de errores, verificación de webhooks,
-  cualquier cosa que elimine una trampa en *cómo se llama* a la API.
+  cualquier cosa que haga más fácil y seguro *llamar* a la API.
 - **No**: validar que un `tipoFactura` encaja con una operación, que una cuota cuadra con su
   base, o que una `fechaOperacion` está permitida. La autoridad es la API.
 

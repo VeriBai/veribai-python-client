@@ -1,4 +1,4 @@
-"""The invoice read surface, the QR trap, and waiting for a verdict."""
+"""The invoice read surface, the QR, and waiting for a verdict."""
 
 from __future__ import annotations
 
@@ -119,51 +119,40 @@ class TestDetalle:
         assert "serie" not in mock_http.calls[0].request.params
 
 
+def _qr_json(qr_base64):
+    return {"qrBase64": qr_base64, "urlValidacion": "https://example.test/v?id=1"}
+
+
 class TestQr:
-    def test_bytes_devueltos_tal_cual(self, client, mock_http):
+    def test_decodifica_qr_base64(self, client, mock_http):
         mock_http.add(
             mock_http.GET,
             f"{SANDBOX}/v1/facturas/F1/qr",
-            body=PNG,
-            content_type="image/png",
+            json=_qr_json(base64.b64encode(PNG).decode()),
         )
         assert client.facturas.qr("F1", nif_emisor="B1") == PNG
+        assert mock_http.calls[0].request.headers["Accept"] == "application/json"
 
-    def test_siempre_se_pide_accept_image_png(self, client, mock_http):
-        # API Gateway only decodes the payload to bytes when the REQUEST says so.
-        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", body=PNG)
-        client.facturas.qr("F1", nif_emisor="B1")
-        assert mock_http.calls[0].request.headers["Accept"] == "image/png"
-
-    def test_base64_de_texto_se_decodifica(self, client, mock_http):
-        # The trap: same Content-Type, but the body is the base64 TEXT of the PNG.
-        # Written straight to a file it produces an image that will not open.
-        mock_http.add(
-            mock_http.GET,
-            f"{SANDBOX}/v1/facturas/F1/qr",
-            body=base64.b64encode(PNG),
-            content_type="image/png",
-        )
-        assert client.facturas.qr("F1", nif_emisor="B1") == PNG
-
-    def test_data_uri_se_tolera(self, client, mock_http):
-        cuerpo = b"data:image/png;base64," + base64.b64encode(PNG)
-        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", body=cuerpo)
-        assert client.facturas.qr("F1", nif_emisor="B1") == PNG
-
-    def test_algo_que_no_es_png_ni_base64_se_devuelve_intacto(self, client, mock_http):
-        # Better to hand back what arrived than to invent a decoding of it.
-        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", body=b"?? no soy un png")
-        assert client.facturas.qr("F1", nif_emisor="B1") == b"?? no soy un png"
-
-    def test_base64_que_no_decodifica_a_png(self, client, mock_http):
-        mock_http.add(
-            mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", body=base64.b64encode(b"otra cosa")
-        )
-        assert client.facturas.qr("F1", nif_emisor="B1") == base64.b64encode(b"otra cosa")
+    @pytest.mark.parametrize(
+        "cuerpo",
+        [
+            {"urlValidacion": "https://example.test"},
+            _qr_json(""),
+            _qr_json("no es base64!"),
+            _qr_json(base64.b64encode(b"otra cosa").decode()),
+        ],
+    )
+    def test_qr_que_no_es_un_png(self, client, mock_http, cuerpo):
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", json=cuerpo)
+        with pytest.raises(veribai.VeriBaiError):
+            client.facturas.qr("F1", nif_emisor="B1")
 
     def test_guardar_qr(self, client, mock_http, tmp_path):
-        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/facturas/F1/qr", body=PNG)
+        mock_http.add(
+            mock_http.GET,
+            f"{SANDBOX}/v1/facturas/F1/qr",
+            json=_qr_json(base64.b64encode(PNG).decode()),
+        )
         destino = tmp_path / "qr.png"
         ruta = client.facturas.guardar_qr("F1", nif_emisor="B1", ruta=destino)
         assert destino.read_bytes() == PNG

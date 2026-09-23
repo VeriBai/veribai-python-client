@@ -11,7 +11,7 @@ class Recurso:
     """A group of endpoints sharing one base URL.
 
     Two exist: the Invoicing API (where the base URL *is* the environment) and
-    the Management API (one gateway for both, resolving the environment from the
+    the Management API (one URL for both, resolving the environment from the
     key).
     """
 
