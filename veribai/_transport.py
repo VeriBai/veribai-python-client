@@ -135,12 +135,12 @@ def _retry_after(resp: requests.Response) -> Optional[float]:
         return None  # HTTP-date form; fall back to exponential backoff
 
 
-def _es_rechazo_de_gateway(status: int, cuerpo: Any) -> bool:
-    """API Gateway's own rejections carry ``message`` and no ``code``."""
+def _es_rechazo_sin_codigo(status: int, cuerpo: Any) -> bool:
+    """Key and route rejections carry ``message`` and no ``code``."""
     return status == 403 and isinstance(cuerpo, dict) and "code" not in cuerpo
 
 
-#: API Gateway's wording for an exhausted usage-plan quota. Its throttle says
+#: The API's wording for an exhausted monthly quota. Its throttle says
 #: "Too Many Requests" instead, and neither carries a ``code``, so the message is
 #: the only thing that separates a burst you should retry from a monthly cap you
 #: should not. Matched only when no ``code`` is present, so a future VeriBai-coded
@@ -161,23 +161,22 @@ def construir_error(resp: requests.Response) -> errors.APIError:
     status = resp.status_code
     rid = _request_id(resp)
 
-    if _es_rechazo_de_gateway(status, cuerpo):
+    if _es_rechazo_sin_codigo(status, cuerpo):
         mensaje = str(cuerpo.get("message", "Forbidden"))
         if "Missing Authentication Token" in mensaje:
             return errors.UnknownRouteError(
                 status,
                 None,
-                "this path does not exist on this API (API Gateway answers "
-                "'Missing Authentication Token', not 404, for an unknown route)",
+                "this path does not exist on this API (an unknown route is answered "
+                "with 'Missing Authentication Token', not 404)",
                 payload=cuerpo,
                 request_id=rid,
             )
         return errors.AuthenticationError(
             status,
             None,
-            "the API key is missing, unknown or disabled: API Gateway rejected the "
-            "request before it reached VeriBai (this is the gateway's 403, which "
-            "carries no 'code' field, not an application permission error)",
+            "the API key is missing, unknown or disabled (this 403 carries no 'code' "
+            "field and is not an application permission error)",
             payload=cuerpo,
             request_id=rid,
         )
@@ -284,7 +283,7 @@ class Transport:
             idempotente: True only for routes VeriBai replays by identity. It is
                 what licenses a retry after a *network* error; see the module
                 docstring.
-            binario: return raw bytes instead of decoded JSON (the QR endpoint).
+            binario: return raw bytes instead of decoded JSON (the XML endpoint).
         """
         url = f"{base_url.rstrip('/')}/{ruta.lstrip('/')}"
         cuerpo = _json.dumps(json, ensure_ascii=False).encode("utf-8") if json is not None else None

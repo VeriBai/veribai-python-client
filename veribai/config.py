@@ -4,7 +4,7 @@ There are two physical APIs behind one API key:
 
 * the **Invoicing API**, where the base URL *is* the environment
   (``sandbox.veribai.com`` = TEST, ``api.veribai.com`` = LIVE);
-* the **Management API**, a single gateway that resolves the environment from
+* the **Management API**, a single URL that resolves the environment from
   the key itself, which is why no management call takes an ``entorno``
   parameter.
 
@@ -35,7 +35,7 @@ INVOICING_URLS: Dict[str, str] = {
     LIVE: "https://api.veribai.com",
 }
 
-#: One gateway for both environments.
+#: One URL for both environments.
 MANAGEMENT_URL = "https://manage-api.veribai.com"
 
 DEFAULT_TIMEOUT = 30.0

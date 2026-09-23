@@ -126,7 +126,7 @@ class TestRespuestasDeError:
 
     @responses.activate
     def test_429_por_cuota_agotada_no_se_reintenta(self, sin_dormir):
-        # API Gateway says "Limit Exceeded" with no code when the MONTHLY quota is
+        # The API says "Limit Exceeded" with no code when the MONTHLY quota is
         # gone. Nothing ran, so a retry is safe, but no wait inside a few seconds
         # will clear a monthly cap: retrying only spends the remaining attempts.
         for _ in range(3):
@@ -134,13 +134,13 @@ class TestRespuestasDeError:
         with pytest.raises(errors.RateLimitError) as exc:
             transporte(sin_dormir).request("GET", SANDBOX, "/v1/facturas")
         assert exc.value.cuota_agotada is True
-        assert exc.value.code is None  # the gateway sends none; branch on cuota_agotada
+        assert exc.value.code is None  # none is sent; branch on cuota_agotada
         assert len(responses.calls) == 1
         assert sin_dormir.esperas == []
 
     @responses.activate
     def test_un_429_con_code_propio_nunca_se_lee_como_cuota(self, sin_dormir):
-        # A coded 429 is VeriBai's own, not the gateway's cap, whatever it says.
+        # A coded 429 is never read as the quota, whatever it says.
         responses.add(responses.GET, RUTA, json=error("TOO_MANY", "limit exceeded"), status=429)
         responses.add(responses.GET, RUTA, json={"facturas": []})
         transporte(sin_dormir).request("GET", SANDBOX, "/v1/facturas")
@@ -251,8 +251,7 @@ class TestRespuestasDeError:
 
     @responses.activate
     def test_cf_not_configured_no_se_reintenta_ni_en_ruta_idempotente(self, sin_dormir):
-        # A deployment fault: the CloudFront domain is not wired on the Lambda. It
-        # will still not be wired in 20 seconds, so retrying only spends quota.
+        # A server-side configuration fault. It will still be there in 20 seconds, so retrying only spends quota.
         url = f"{SANDBOX}/v1/cumplimiento/declaracion-responsable"
         responses.add(responses.GET, url, json=error("CF_NOT_CONFIGURED"), status=500)
         with pytest.raises(errors.ServerError):
@@ -307,7 +306,7 @@ class TestRespuestasDeError:
 
     @responses.activate
     def test_502_se_reintenta_solo_si_es_idempotente(self, sin_dormir):
-        # A gateway error can mean the Lambda ran to completion.
+        # A 502 can mean the request was fully processed.
         responses.add(responses.POST, f"{SANDBOX}/v1/webhooks", json={}, status=502)
         with pytest.raises(errors.ServerError):
             transporte(sin_dormir).request("POST", SANDBOX, "/v1/webhooks", json={})
@@ -332,8 +331,8 @@ class TestRespuestasDeError:
 
 class TestMapeoDeErrores:
     @responses.activate
-    def test_rechazo_del_gateway_es_problema_de_clave_no_de_permisos(self, sin_dormir):
-        # API Gateway answers 403 {"message": "Forbidden"} (no `code`) when the
+    def test_403_sin_code_es_problema_de_clave_no_de_permisos(self, sin_dormir):
+        # The API answers 403 {"message": "Forbidden"} (no `code`) when the
         # key is missing, unknown or disabled. Reading that as a permission
         # problem sends people hunting for the wrong bug.
         responses.add(responses.GET, RUTA, json={"message": "Forbidden"}, status=403)

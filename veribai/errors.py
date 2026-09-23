@@ -10,7 +10,7 @@ self-client conflict).
 Two shapes exist on the wire and this module tells them apart:
 
 * an **application error**: JSON with ``code`` and ``message``;
-* a **gateway rejection**: API Gateway answers ``403 {"message": "Forbidden"}``
+* a **key or route rejection**: the API answers ``403 {"message": "Forbidden"}``
   with *no* ``code`` when the API key is missing, unknown or disabled, and
   ``403 {"message": "Missing Authentication Token"}`` for an unknown path. Those
   are surfaced as :class:`AuthenticationError` and :class:`UnknownRouteError`,
@@ -93,13 +93,13 @@ class APIError(VeriBaiError):
     Attributes:
         status: HTTP status code.
         code: the API's machine-readable code (``VALIDATION_ERROR``, …), or
-            ``None`` for a gateway rejection that carries no ``code`` field.
+            ``None`` for a key or route rejection that carries no ``code`` field.
         message: the API's human-readable message.
         errors: field-named violation strings, present on ``VALIDATION_ERROR``.
             These are human-readable prose, so **do not parse them**; branch on
             ``code``.
         payload: the full decoded body, for anything not modelled here.
-        request_id: the API Gateway request id, worth quoting to support.
+        request_id: the request id, worth quoting to support.
     """
 
     def __init__(
@@ -162,13 +162,12 @@ class CertificateError(ValidationError):
 class AuthenticationError(APIError):
     """The API key is missing, unknown or disabled.
 
-    API Gateway rejects the call before any application code runs, so this
-    arrives as a ``403`` with no ``code``, not the ``401`` you might expect.
+    This arrives as a ``403`` with no ``code``, not the ``401`` you might expect.
     """
 
 
 class UnknownRouteError(APIError):
-    """The path does not exist on this API (gateway ``Missing Authentication Token``)."""
+    """The path does not exist on this API (``403 Missing Authentication Token``)."""
 
 
 class PaymentRequiredError(APIError):
@@ -255,20 +254,20 @@ class RepresentationSigningError(ConflictError):
 
 
 class RateLimitError(APIError):
-    """429: usage-plan throttle **or** monthly quota exhausted, two different things.
+    """429: rate-limit throttle **or** monthly quota exhausted, two different things.
 
     A **throttle** is a burst over the per-second rate; the next second clears it,
     so this client backs off and retries it for you. An exhausted **monthly quota**
     is not going to clear inside any retry budget, so retrying only spends the
     remaining attempts and delays the error you were always going to get. The two
-    arrive on the same status, from API Gateway itself, with **no** ``code``
+    arrive on the same status with **no** ``code``
     field, so ``code`` is ``None`` on both and cannot tell them apart.
 
     :attr:`cuota_agotada` is the discriminator: ``True`` for the quota, ``False``
     for a throttle. Branch on it rather than on ``code``, which is the one place
     this library's "always branch on ``code``" rule has nothing to offer.
 
-    The quota is **per API key**, not per account, and API Gateway sends no
+    The quota is **per API key**, not per account, and the API sends no
     ``X-RateLimit-*`` headers on success, so a 429 is the only authoritative
     signal that you have run out. ``retry_after`` carries the server's hint when
     it sent one; when that hint is longer than the policy's ``backoff_max`` the
@@ -386,8 +385,8 @@ RETRY_SAFE_500_CODES = frozenset(
 #: Retrying these only spends quota to be told the same thing again.
 NEVER_RETRY_500_CODES = frozenset(
     {
-        # The CloudFront domain is not wired on the Lambda: a deployment fault,
-        # not a client one, and it will still be there in 20 seconds.
+        # A server-side configuration fault, not a client one, and it will
+        # still be there in 20 seconds.
         "CF_NOT_CONFIGURED",
     }
 )

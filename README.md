@@ -6,9 +6,9 @@
 [![codecov](https://codecov.io/gh/VeriBai/veribai-python-client/branch/main/graph/badge.svg)](https://codecov.io/gh/VeriBai/veribai-python-client)
 [![License](https://img.shields.io/pypi/l/veribai.svg)](LICENSE)
 
-Cliente oficial de Python para la API de [VeriBai](https://veribai.com?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-intro): envío de facturas
-bajo los dos regímenes de facturación electrónica españoles: **VeriFactu** (AEAT) y
-**TicketBAI** (las haciendas forales de Álava, Bizkaia y Gipuzkoa).
+Cliente oficial de Python para la API de [VeriBai](https://veribai.com?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-intro). Con él puedes enviar
+facturas a los dos sistemas de facturación electrónica de España: **VeriFactu** (AEAT) y
+**TicketBAI** (haciendas forales de Álava, Bizkaia y Gipuzkoa).
 
 ```bash
 pip install veribai
@@ -52,16 +52,17 @@ print(verdicto.registrada, verdicto.csv_aeat)
 
 ---
 
-## Lo primero que hay que entender
+## Antes de empezar
 
-**Un `200` de `crear` significa _aceptada_, no _presentada_.**
+**Que `crear` devuelva un `200` significa que la factura está _aceptada_, no _presentada_.**
 
-VeriBai ha recibido la factura, la ha validado y (en TicketBAI) ya la ha firmado y ha
-avanzado de forma permanente la cadena de hash del emisor. La autoridad
-tributaria responde después, y *esa* respuesta es la que tiene valor legal. VeriFactu se
-envía mediante un proceso que se ejecuta cada minuto; TicketBAI suele responder en segundos.
+En ese momento VeriBai ya ha recibido y validado la factura y, si es TicketBAI, también la ha
+firmado y la ha añadido a la cadena de hash del emisor, algo que ya no tiene vuelta atrás.
+La respuesta de la administración tributaria llega más tarde, y es esa la que tiene validez
+legal. Los envíos a VeriFactu salen en un proceso que se ejecuta cada minuto; TicketBAI suele
+responder en pocos segundos.
 
-Es decir: hay dos momentos, no uno.
+Por tanto, cada factura pasa por dos momentos distintos:
 
 ```python
 respuesta = client.verifactu.crear(factura)  # aceptada
@@ -77,46 +78,38 @@ elif verdicto.requiere_subsanacion:
     ...
 ```
 
-En cuanto haya volumen, usa un webhook en lugar de hacer *polling*: cada consulta es una
-llamada más contra un cupo mensual que es **por clave API**.
+Cuando empieces a tener volumen, pasa a webhooks en lugar de consultar el estado una y otra
+vez: cada consulta cuenta para el cupo mensual, y ese cupo va **por clave API**.
 
-## Qué aporta este paquete frente a usar `requests`
+## Qué te ahorras frente a usar `requests` directamente
 
-**Reintentos que saben cuándo un reintento es seguro.** Un `429` o un
-`503 SHARDING_UNAVAILABLE` demuestran que el servidor rechazó la petición *antes* de hacer
-nada, así que reintentar siempre es seguro. Una conexión caída no demuestra nada: puede que
-la factura ya esté firmada y encolada. Por eso los errores de red solo se reintentan en las
-rutas que VeriBai hace idempotentes por identidad (las rutas de factura, donde un reenvío
-idéntico reproduce el registro original en lugar de crear uno segundo), y nunca en rutas
-donde un duplicado sería un segundo objeto real.
+**Reintentos solo cuando son seguros.** Un `429` o un `503 SHARDING_UNAVAILABLE` indican que
+el servidor rechazó la petición *antes* de procesarla, así que siempre se pueden repetir.
+Con una conexión cortada no hay forma de saberlo: la factura puede estar ya firmada y en
+cola. Por eso los errores de red solo se reintentan en las rutas de factura, donde VeriBai
+reconoce un reenvío idéntico y devuelve el registro original en vez de crear otro. En las
+demás rutas un duplicado sería un segundo objeto real, y ahí nunca se reintenta.
 
-**Importes y fechas en el formato exacto que exige la API.** Pasa `Decimal` y `date`; la
-conversión se hace al salir. `float` se rechaza de plano: 0.1 no es exactamente 0.1 en coma
-flotante binaria, y un céntimo de desviación en una cuota es un defecto fiscal, no una
-molestia de redondeo. Tampoco se redondea nunca en silencio: un importe con más precisión de
-la que admite el formato lanza una excepción, de modo que la decisión de redondear sigue
-siendo tuya.
+**Importes y fechas en el formato exacto que pide la API.** Pasa `Decimal` y `date` y el
+cliente se encarga de convertirlos. Los `float` se rechazan: en coma flotante 0.1 no es
+exactamente 0.1, y un céntimo de diferencia en una cuota es un error fiscal, no un problema
+de redondeo. Tampoco se redondea nada por tu cuenta: si un importe tiene más decimales de los
+que admite el formato, se lanza una excepción y decides tú cómo redondear.
 
-**Verificación de webhooks que verifica de verdad.** El HMAC se calcula sobre los **bytes
-crudos de la petición**, así que el habitual `json.loads` → `json.dumps` lo invalida en
-silencio. `veribai.webhooks.parse_entrega` verifica primero, parsea después, y te devuelve el
-`idEntrega` determinista sobre el que deduplicar.
+**Webhooks bien verificados.** El HMAC se calcula sobre los **bytes originales de la
+petición**, así que hacer `json.loads` y luego `json.dumps` rompe la firma sin avisar.
+`veribai.webhooks.parse_entrega` primero verifica y después parsea, y te devuelve el
+`idEntrega` que necesitas para descartar duplicados.
 
-**La trampa del QR, resuelta.** API Gateway solo devuelve el PNG como bytes cuando la
-*petición* envía `Accept: image/png`; con el `*/*` que mandan la mayoría de clientes por
-defecto, el cuerpo es el **texto base64** del PNG aunque siga anunciándose como `image/png`:
-lo escribes a un fichero y obtienes una imagen que no abre. `client.facturas.qr()` envía
-siempre la cabecera y, aun así, comprueba el número mágico del PNG.
+**Excepciones con las que puedes decidir qué hacer.** Cada error documentado tiene su propia
+excepción, con el `code` que devuelve la API. Decide según ese código y no solo por el estado
+HTTP: un `409` puede ser un conflicto de identidad en `crear`, `ALREADY_CANCELLED` en
+`anular`, o un límite del plan o un conflicto de autoemisor en `clientes/crear`.
 
-**Errores sobre los que se puede ramificar.** Cada fallo documentado se corresponde con una
-excepción tipada que lleva el `code` de la API. Ramifica por el código, nunca por el estado
-HTTP a secas: un `409` es un conflicto de identidad en `crear`, `ALREADY_CANCELLED` en
-`anular`, y un límite de plan o un conflicto de autoemisor en `clientes/crear`.
-
-Lo que deliberadamente **no** hace es replicar las reglas de validación fiscal. Las fijan
-cuatro administraciones tributarias y cambian; un cliente que rechazara en local se quedaría
-desactualizado y empezaría a rechazar facturas que la API habría aceptado. Aquí se comprueba
-el formato; la legalidad la decide la API.
+Lo que este paquete **no** hace, a propósito, es repetir las reglas de validación fiscal.
+Las definen cuatro administraciones tributarias y van cambiando; un cliente que validara en
+local acabaría quedándose atrás y rechazando facturas que la API sí aceptaría. Aquí se
+comprueba el formato, y si una factura es correcta lo decide la API.
 
 ## Entornos
 
@@ -125,62 +118,63 @@ el formato; la legalidad la decide la API.
 | **test** (por defecto) | `sandbox.veribai.com` | `manage-api.veribai.com` |
 | **live** | `api.veribai.com` | `manage-api.veribai.com` |
 
-En facturación, la URL base *es* el entorno. La API de Gestión es una única pasarela que
-resuelve el entorno a partir de la propia clave, y por eso ninguna llamada de gestión recibe
-un parámetro `entorno`.
+En la API de Facturación, el entorno lo determina la URL base. La API de Gestión tiene una
+sola URL para los dos entornos y deduce cuál usar a partir de la clave; por eso ninguna
+llamada de gestión lleva un parámetro `entorno`.
 
 ```python
 client = veribai.Client(api_key="...", environment="live")
 ```
 
-El entorno se resuelve **en este orden**:
+El entorno se elige **en este orden**:
 
 1. el argumento `environment=`;
 2. la variable `VERIBAI_ENVIRONMENT`;
 3. `"test"`.
 
-> Por eso `veribai.Client(api_key="...")` es sandbox **solo si `VERIBAI_ENVIRONMENT` no
-> está definida**. Pasa `environment=` siempre: el argumento gana a la variable, así que es
-> lo único que no depende de cómo esté configurado el entorno donde corre tu código.
+> Es decir, `veribai.Client(api_key="...")` apunta al sandbox **solo si
+> `VERIBAI_ENVIRONMENT` no está definida**. Te recomendamos pasar siempre `environment=`:
+> tiene prioridad sobre la variable, así que no depende de cómo esté configurada la máquina
+> donde se ejecuta tu código.
 
-El sandbox es el último recurso a propósito: el coste de una factura equivocada en sandbox
-es una prueba desperdiciada, y el de una factura equivocada en producción es un registro
-fiscal presentado legalmente.
+Si no se indica nada, se usa el sandbox, y es a propósito: una factura equivocada en el
+sandbox es solo una prueba fallida, pero en producción es un registro fiscal presentado
+de verdad.
 
-Para comprobar dónde estás sin gastar una llamada:
+Para saber en qué entorno estás sin hacer ninguna llamada:
 
 ```python
 client.entorno  # 'test' | 'live'
-client.origen_entorno  # de dónde salió: el argumento, la variable o el valor por defecto
-client.invoicing_url  # la URL que lo decide
+client.origen_entorno  # de dónde viene: el argumento, la variable o el valor por defecto
+client.invoicing_url  # la URL de facturación que se va a usar
 ```
 
-Y para comprobarlo contra el servidor, `client.cuenta.obtener()` devuelve el `entorno` que
-la API deduce de tu propia clave, que es la verdad de referencia.
+Si quieres confirmarlo con el servidor, `client.cuenta.obtener()` devuelve el `entorno` que
+la API asocia a tu clave, y ese es el dato fiable.
 
-Un entorno equivocado no es, por sí solo, una factura equivocada: **las claves se emiten por
-entorno**, así que una clave de TEST enviada a `api.veribai.com` (o una de LIVE enviada al
-sandbox) la rechaza API Gateway como `AuthenticationError` antes de llegar a VeriBai.
+Equivocarse de entorno no hace que acabes presentando una factura donde no toca: **cada
+clave pertenece a un único entorno**, así que la API de VeriBai rechaza con un
+`AuthenticationError` una clave de TEST enviada a `api.veribai.com` o una de LIVE enviada al
+sandbox.
 
-La configuración también puede venir del entorno, para que el mismo código pase de uno a otro
-sin tocar nada:
+También puedes configurarlo con variables de entorno, y así el mismo código funciona en los
+dos entornos sin cambios:
 
 ```bash
 export VERIBAI_API_KEY=...
 export VERIBAI_ENVIRONMENT=live     # por defecto: test
 ```
 
-> **LIVE no está probado en esta versión.** `api.veribai.com` todavía no se ha desplegado, así
-> que seleccionar `live` emite un `LiveEnvironmentWarning` y las llamadas pueden responder
-> `503 ENVIRONMENT_NOT_AVAILABLE`. La versión `1.0.0` queda reservada para la primera
-> publicación posterior a que producción haya funcionado de verdad.
+> **LIVE todavía no está probado en esta versión.** `api.veribai.com` aún no está desplegada,
+> así que al elegir `live` se emite un `LiveEnvironmentWarning` y las llamadas pueden
+> devolver `503 ENVIRONMENT_NOT_AVAILABLE`. Publicaremos la versión `1.0.0` cuando producción
+> esté funcionando.
 
-## Superficie de la API
+## Métodos disponibles
 
-Los nombres de los métodos reflejan los endpoints, y los nombres de campo son los de la
-propia API (en español), así que todo lo que leas en la
-[documentación de la API](https://veribai.com/docs/api?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-api-docs) se traslada aquí sin
-traducción.
+Los métodos siguen los mismos nombres que los endpoints, y los campos se llaman igual que en
+la API (en español), así que lo que leas en la
+[documentación de la API](https://veribai.com/docs/api?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-api-docs) te sirve tal cual.
 
 | Grupo | Métodos |
 |---|---|
@@ -196,16 +190,20 @@ traducción.
 | `client.webhooks` | `listar` · `crear` · `obtener` · `modificar` · `eliminar` · `listar_clientes` · `vincular_clientes` · `desvincular_cliente` |
 | `client.cumplimiento` | `declaracion_responsable` |
 
-Las respuestas son diccionarios de JSON decodificado. Es una decisión, no dejadez: la API
-añade campos (hace poco llegaron tres en una sola semana), y unos modelos rígidos
-convertirían un cambio aditivo del servidor en una rotura del cliente. Solo hay objetos
-tipados donde una lectura equivocada cuesta algo: `Verdicto`, `Pagina`, `webhooks.Entrega`.
+Las respuestas se devuelven como diccionarios con el JSON ya decodificado. Lo hemos
+decidido así porque la API va incorporando campos nuevos (hace poco se añadieron tres en una
+misma semana), y con modelos cerrados cada campo nuevo obligaría a actualizar el cliente.
+Solo usamos objetos tipados donde leer mal un campo puede salir caro: `Verdicto`, `Pagina` y
+`webhooks.Entrega`.
+
+`client.facturas.qr()` devuelve directamente los bytes del PNG, listos para guardar en un
+fichero, y `guardar_qr()` lo hace por ti.
 
 ## Webhooks
 
-Registrar un endpoint es la mitad del trabajo: las entregas no empiezan hasta que además
-**vinculas clientes secundarios**. Un webhook sin clientes vinculados no emite nada, y esa es
-la razón más frecuente de que una integración nueva no reciba nada.
+Registrar el endpoint no basta: no recibirás ninguna entrega hasta que le **vincules
+clientes secundarios**. Un webhook sin clientes vinculados no envía nada, y es el motivo más
+habitual de que una integración nueva no reciba eventos.
 
 ```python
 wh = client.webhooks.crear(
@@ -216,34 +214,36 @@ wh = client.webhooks.crear(
 client.webhooks.vincular_clientes(wh["webhook"]["idWebhook"], ["B12345674"])
 ```
 
-Recibirlos (aquí con Flask; en cualquier framework es igual):
+Para recibirlos (el ejemplo usa Flask, pero en cualquier framework se hace igual):
 
 ```python
 @app.post("/veribai")
 def recibir():
     try:
         entrega = veribai.webhooks.parse_entrega(
-            cuerpo=request.get_data(),  # bytes CRUDOS, antes de parsear el JSON
+            cuerpo=request.get_data(),  # los bytes originales, sin parsear el JSON
             cabeceras=request.headers,
             secreto=os.environ["VERIBAI_WEBHOOK_SECRET"],
         )
     except veribai.WebhookSignatureError:
         return "", 401
 
-    if ya_procesado(entrega.id_entrega):  # al menos una vez: deduplicar es cosa tuya
+    if ya_procesado(entrega.id_entrega):  # puede llegar más de una vez: descarta duplicados
         return "", 200
 
     if entrega.rechazada:
-        motivo = entrega.motivo_rechazo  # el código y el motivo de la propia autoridad
+        motivo = entrega.motivo_rechazo  # código y motivo que da la administración
         ...
     return "", 200
 ```
 
-La entrega es **al menos una vez** y los duplicados son normales. Cada reintento lleva un
-cuerpo idéntico byte a byte y el mismo `idEntrega`, un UUIDv5 determinista de
-(webhook, factura, evento) y nunca aleatorio, así que es una clave de deduplicación sólida.
-`factura.rechazada` no se puede excluir de una suscripción: un registro rechazado no se ha
-presentado, y la obligación de presentarlo es del obligado tributario.
+Cada evento se entrega **al menos una vez**, así que recibir duplicados es normal. Los
+reintentos llevan exactamente el mismo cuerpo y el mismo `idEntrega`, un UUIDv5 que se
+calcula a partir del webhook, la factura y el evento (nunca es aleatorio), así que puedes
+usarlo con total seguridad para descartar duplicados.
+
+No es posible darse de baja de `factura.rechazada`: una factura rechazada no se ha
+presentado, y presentarla sigue siendo responsabilidad del obligado tributario.
 
 ## Errores
 
@@ -251,20 +251,20 @@ presentado, y la obligación de presentarlo es del obligado tributario.
 try:
     client.verifactu.crear(factura)
 except veribai.IdentityConflictError as exc:
-    # misma serie+número+fecha, distinto importe o tipo: es otra factura
+    # misma serie, número y fecha, pero distinto importe o tipo: es otra factura
     print(exc.code, exc.errors)
 except veribai.ValidationError as exc:
-    print(exc.errors)  # cadenas por campo, incluidos códigos de reglas de la AEAT
+    print(exc.errors)  # un mensaje por campo, con los códigos de regla de la AEAT
 except veribai.RateLimitError as exc:
-    print(exc.retry_after)  # ya se reintentó; esto es después de agotar la política
+    print(exc.retry_after)  # llega aquí después de agotar los reintentos
 except veribai.APIError as exc:
     print(exc.status, exc.code, exc.request_id)
 ```
 
-Ojo: un `403` en la superficie de clave API normalmente **no** es un problema de permisos.
-API Gateway responde `403 {"message": "Forbidden"}` (sin `code`) cuando la clave falta, es
-desconocida o está deshabilitada. Ese caso se lanza como `AuthenticationError`, para que no
-acabes buscando el error donde no está.
+Un `403 {"message": "Forbidden"}` sin `code` **no** es un problema de permisos: la API de
+VeriBai lo devuelve cuando falta la clave, no existe o está desactivada. Por eso se lanza
+como `AuthenticationError` y no como error de permisos, para que busques el problema en el
+sitio correcto.
 
 ## Reintentos
 
@@ -276,9 +276,10 @@ client = veribai.Client(
 )
 ```
 
-`max_attempts=1` desactiva los reintentos. Se respeta `Retry-After` cuando el servidor lo
-envía, y el *jitter* está activado por defecto para que una flota de workers no se
-resincronice en el mismo segundo después de un throttle.
+Con `max_attempts=1` se desactivan los reintentos. Si el servidor envía `Retry-After`, se
+respeta, y por defecto se añade un margen aleatorio (*jitter*) a cada espera para que, si
+tienes muchos workers, no vuelvan a lanzar todos las peticiones en el mismo segundo después
+de un límite de velocidad.
 
 ## Desarrollo
 
@@ -289,23 +290,22 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
 
-Ningún test de la suite por defecto habla con un entorno real de VeriBai ni con una
-administración tributaria; todo está simulado en la frontera HTTP. Los tests marcados como
-`integration` necesitan credenciales reales y son opcionales.
+Ningún test de la batería por defecto se conecta a VeriBai ni a ninguna administración
+tributaria: todas las llamadas HTTP están simuladas. Los tests marcados como `integration`
+necesitan credenciales reales y son opcionales.
 
 ## Seguridad
 
-Solo el propietario del repositorio puede hacer merge o publicar; las releases se construyen
-en CI a partir de un commit de `main` que sube la versión, se publican en PyPI mediante OIDC
-(Trusted Publishing, sin ningún token de larga duración) y llevan atestaciones de
-procedencia. Para
-reportar un problema, consulta [SECURITY.md](SECURITY.md). No abras una issue
-pública para una vulnerabilidad.
+Solo el propietario del repositorio puede hacer merge o publicar versiones. Cada versión se
+genera en CI a partir de un commit de `main` que actualiza el número de versión, se publica en
+PyPI mediante OIDC (Trusted Publishing, sin tokens de larga duración) e incluye atestaciones
+de procedencia. Si encuentras una vulnerabilidad, sigue las instrucciones de
+[SECURITY.md](SECURITY.md) y no abras una issue pública.
 
-La lista de dependencias en tiempo de ejecución es deliberadamente de un solo paquete
-(`requests`). Esta biblioteca envía registros fiscales legalmente vinculantes: cada
-dependencia transitiva es superficie de ataque en la cadena de suministro.
+En ejecución, el paquete depende de una sola librería (`requests`), y es intencionado: esta
+librería envía registros fiscales con validez legal, y cada dependencia añadida es un punto
+más por donde podría entrar un ataque a la cadena de suministro.
 
 ## Licencia
 
-Apache 2.0. Ver [LICENSE](LICENSE).
+Apache 2.0. Consulta [LICENSE](LICENSE).

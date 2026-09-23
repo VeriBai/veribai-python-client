@@ -58,9 +58,8 @@ def main() -> None:
         print(f"URL:    {respuesta['urlValidacion']}")
 
         if qr := respuesta.get("qrBase64"):
-            datos = qr.split(",", 1)[-1]  # quita el prefijo del data: URI si viene
             with open("tbai-qr.png", "wb") as fh:
-                fh.write(base64.b64decode(datos))
+                fh.write(base64.b64decode(qr))  # base64 sin prefijo data:
             print("QR guardado en tbai-qr.png")
 
         # Solo el envío a la hacienda foral es asíncrono.
