@@ -14,11 +14,11 @@ class NifRecurso(Recurso):
 
     **``identificado`` means the NIF exists in the census. It does not mean the
     name you sent is right.** For a **CIF** the AEAT ignores the queried name
-    entirely: send ``B26682641`` with ``nombre="Pepita SL"`` and you still get
-    ``identificado``, with the real razón social in ``nombreCenso``. Comparing the
-    two is *your* check. For a **DNI/NIE** the name is part of the verdict, so a
-    wrong one answers ``no_identificado``. The same status therefore carries
-    different weight depending on the kind of NIF.
+    entirely: send a registered CIF with ``nombre="REPARACIONES EJEMPLO, SL"``
+    and you still get ``identificado``, with the real razón social in
+    ``nombreCenso``. Comparing the two is *your* check. For a **DNI/NIE** the
+    name is part of the verdict, so a wrong one answers ``no_identificado``. The
+    same status therefore carries different weight depending on the kind of NIF.
 
     The whole batch (up to 100 entries) costs one AEAT call, and results are
     cached, so validating a list is far cheaper than validating one at a time.
@@ -53,7 +53,7 @@ class NifRecurso(Recurso):
         never cached, so simply calling again asks the census again.
 
             >>> client.nif.validar([
-            ...     {"nif": "B26682641", "nombre": "SKY CLOUD INFRASTRUCTURE SL"},
+            ...     {"nif": "B00000000", "nombre": "REPARACIONES EJEMPLO, SL"},
             ...     {"nif": "12345678Z", "nombre": "NOMBRE APELLIDO"},
             ... ])
         """

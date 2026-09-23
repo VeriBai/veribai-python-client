@@ -6,6 +6,20 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.2.2] - 2026-09-23
+
+### Documentación
+
+- Ejemplo en el README de un destinatario extranjero con `idOtro` (`{codigoPais?, idType, id}`,
+  en lugar de `nif`). El cliente no valida `idOtro` ni las claves por impuesto: la API responde
+  `400`.
+- Ejemplo en el README de una factura TicketBAI intracomunitaria (`clavesRegimen`, líneas con
+  `operacionExenta`, `causaNoSujecion` y `tipoOperacion`). Los campos nuevos de TicketBAI
+  viajan sin cambios en el cliente.
+- El NIF de destinatario de los ejemplos (`B98765432`) tenía el dígito de control mal y la API
+  ahora lo rechaza con `400`. Sustituido por `B00000000`, un marcador: pon ahí el NIF de tu
+  cliente. El ejemplo de `client.nif.validar` usa el mismo.
+
 ## [0.2.1] - 2026-09-23
 
 ### Cambiado
@@ -177,6 +191,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.2.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.0...v0.1.1

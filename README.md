@@ -32,7 +32,7 @@ respuesta = client.verifactu.crear(
             "tipoFactura": "F1",
             "descripcion": "Servicios de consultoría",
         },
-        "destinatario": {"nif": "B98765432", "nombre": "Cliente SL"},
+        "destinatario": {"nif": "B00000000", "nombre": "CLIENTE, SL"},
         "detalleDesglose": [
             {
                 "claveRegimen": "01",
@@ -49,6 +49,49 @@ respuesta = client.verifactu.crear(
 verdicto = client.facturas.esperar_verdicto(respuesta["idFactura"], nif_emisor="B12345674")
 print(verdicto.registrada, verdicto.csv_aeat)
 ```
+
+Si el cliente no tiene NIF español, identifícalo con `idOtro` **en lugar de** `nif`, nunca los
+dos. Por ejemplo, una entrega intracomunitaria exenta (E5) a una empresa alemana:
+
+```python
+"destinatario": {
+    "nombre": "Kunde GmbH",
+    "idOtro": {"codigoPais": "DE", "idType": "02", "id": "DE123456789"},  # 02 = NIF-IVA
+},
+"detalleDesglose": [
+    {
+        "claveRegimen": "01",
+        "operacionExenta": "E5",  # en lugar de calificacionOperacion; sin tipo ni cuota
+        "baseImponible": Decimal("100.00"),
+    }
+],
+"totales": {"cuotaTotal": Decimal("0.00"), "importeTotal": Decimal("100.00")},
+```
+
+En TicketBAI el desglose es plano y, con destinatario extranjero, cada línea lleva
+`tipoOperacion`. Una venta intracomunitaria con una línea exenta y otra no sujeta:
+
+```python
+"clavesRegimen": ["01"],
+"desglose": [
+    {
+        "baseImponible": Decimal("1000.00"),
+        "operacionExenta": "E5",
+        "tipoOperacion": "entrega",
+        "descripcion": "Entrega intracomunitaria de maquinaria",
+    },
+    {
+        "baseImponible": Decimal("300.00"),
+        "calificacionOperacion": "N2",
+        "causaNoSujecion": "RL",  # reglas de localización
+        "tipoOperacion": "servicios",
+        "descripcion": "Instalación en destino",
+    },
+],
+```
+
+El cliente envía `idOtro` y estos campos tal cual. Qué combinaciones valen (por impuesto, por
+clave o por provincia) lo comprueba la API, que responde `400` si no encajan.
 
 ---
 
