@@ -10,6 +10,9 @@ Cliente oficial de Python para la API de [VeriBai](https://veribai.com?utm_sourc
 facturas a los dos sistemas de facturación electrónica de España: **VeriFactu** (AEAT) y
 **TicketBAI** (haciendas forales de Álava, Bizkaia y Gipuzkoa).
 
+- Web: [https://veribai.com](https://veribai.com?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-web)
+- Documentación: [https://veribai.com/docs](https://veribai.com/docs?utm_source=readme&utm_medium=referral&utm_campaign=python-client&utm_content=readme-docs)
+
 ```bash
 pip install veribai
 ```

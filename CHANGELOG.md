@@ -59,6 +59,8 @@ el cliente no valida nada de esto: la API responde `400` con el campo.
   `idAcuerdoSistemaInformatico` (≤16). `aux.refExterna` se acepta pero **no llega a la AEAT**.
 - **VeriFactu `totales`**: `cuotaTotal` e `importeTotal` llegan a la AEAT tal cual los
   declaras, con el recargo de equivalencia incluido en ambos.
+- Enlaces a la web (https://veribai.com) y a la documentación (https://veribai.com/docs) al
+  principio del README.
 
 ## [0.2.2] - 2026-09-23
 
