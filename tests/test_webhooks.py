@@ -25,7 +25,7 @@ CUERPO = json.dumps(
             "sistemaFiscal": "verifactu",
             "nifEmisor": "B12345674",
             "idFactura": "FAC-1",
-            "numeroFactura": "A1",
+            "numSerieFactura": "A1",
             "tipoFactura": "F1",
             "importeTotal": "121.00",
             "cuotaTotal": "21.00",

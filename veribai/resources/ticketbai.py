@@ -42,7 +42,27 @@ class TicketbaiRecurso(Recurso):
         QR: the stored identity was returned and nothing was signed again.
 
         Note ``lineas`` is **required for Araba**, whose hacienda rejects altas
-        without detail lines, and optional elsewhere.
+        without detail lines, and optional elsewhere. When you do send it, every
+        line needs ``descripcion``, ``importeUnitario`` and ``importeTotal`` in
+        every province; ``cantidad`` (default ``"1"``) and ``descuento`` are
+        optional. All four amounts take up to 12 integer digits and 8 decimals,
+        and ``Decimal`` values keep that precision on the way out. Read them as:
+
+        * ``importeUnitario``: list price **without** VAT;
+        * ``descuento``: discount **in euros** for the whole line, not a
+          percentage, and never negative;
+        * ``importeTotal``: line total **with** VAT (and recargo), after the
+          discount.
+
+        For R1–R5, ``rectificativa.importes`` (``baseRectificada``,
+        ``cuotaRectificada``, optional ``cuotaRecargoRectificada``) is required
+        with ``tipo: "S"`` and must be absent with ``tipo: "I"``.
+        ``facturasRectificadas`` (and F3's ``facturasSustituidas``) holds at most
+        100 references, each ``serie``/``numero`` at most 20 characters. Longer
+        values are a ``400``, never truncated.
+
+        This client checks none of that; the API answers with a field-named
+        ``400`` before signing, so nothing is chained on a bad payload.
         """
         return dict(
             self._post("/v1/ticketbai/crear", json=preparar(factura), idempotente=True).datos

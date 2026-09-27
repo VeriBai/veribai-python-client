@@ -33,6 +33,20 @@ class VerifactuRecurso(Recurso):
         ``Decimal`` amounts and ``date`` objects in the payload are converted to
         the wire formats automatically; see :mod:`veribai.serialization`.
 
+        ``totales.cuotaTotal`` and ``totales.importeTotal`` reach AEAT exactly as
+        you declare them. With recargo de equivalencia, ``cuotaTotal`` is the sum
+        of ``cuotaRepercutida`` **and** ``cuotaRecargoEquivalencia``, and
+        ``importeTotal`` is base + cuota + recargo.
+
+        ``especial`` carries AEAT's optional ``RegistroAlta`` flags, all of which
+        are transmitted: ``facturaSimplificadaArt7273``,
+        ``facturaSinIdentifDestinatarioArt61d`` and ``cupon`` (``"S"``/``"N"``),
+        ``emitidaPor`` (``"T"``/``"D"``), ``tercero`` (``nombre`` up to 120
+        characters plus ``nif`` or ``idOtro``, as in ``destinatario``),
+        ``numRegistroAcuerdoFacturacion`` (up to 15 characters) and
+        ``idAcuerdoSistemaInformatico`` (up to 16). ``aux.refExterna`` is accepted
+        but **not transmitted to AEAT**, so do not rely on finding it there.
+
         Example::
 
             respuesta = client.verifactu.crear({
