@@ -11,6 +11,7 @@ import pytest
 
 import veribai
 from veribai.errors import SubmissionInProgressError, VerdictTimeout
+from veribai.resources.registros import clave_cambio
 
 from .conftest import SANDBOX, error
 
@@ -292,6 +293,183 @@ class TestRegistros:
             mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": [{"idRegistro": "r2"}]}
         )
         assert [r["idRegistro"] for r in client.registros.iterar("B1")] == ["r1", "r2"]
+
+    def test_veredicto_desde_aware_se_envia_en_utc(self, client, mock_http):
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": []})
+        madrid = dt.timezone(dt.timedelta(hours=2))
+        client.registros.listar(
+            "B1", veredicto_desde=dt.datetime(2026, 9, 27, 12, 0, 0, 999, tzinfo=madrid)
+        )
+        assert "veredictoDesde=2026-09-27T10%3A00%3A00Z" in mock_http.calls[0].request.url
+
+    def test_veredicto_desde_string_con_mas_se_codifica(self, client, mock_http):
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": []})
+        client.registros.listar("B1", veredicto_desde="2026-09-27T12:00:00+02:00")
+        assert "%2B02%3A00" in mock_http.calls[0].request.url
+
+    def test_veredicto_desde_naive_se_rechaza_sin_peticion(self, client, mock_http):
+        with pytest.raises(veribai.FechaError):
+            client.registros.listar("B1", veredicto_desde=dt.datetime(2026, 9, 27, 10))
+        assert len(mock_http.calls) == 0
+
+    def test_iterar_filtrado_sigue_paginas_vacias_con_los_mismos_filtros(self, client, mock_http):
+        url = f"{SANDBOX}/v1/registros"
+        mock_http.add(mock_http.GET, url, json={"registros": [], "proximaPagina": "c1"})
+        mock_http.add(
+            mock_http.GET, url, json={"registros": [{"idRegistro": "r1"}], "proximaPagina": None}
+        )
+        items = list(client.registros.iterar("B1", estado="rechazada", limite=50))
+        assert [r["idRegistro"] for r in items] == ["r1"]
+        segunda = mock_http.calls[1].request.url
+        assert "estado=rechazada" in segunda and "cursor=c1" in segunda and "limite=50" in segunda
+
+    def test_cambios_desde(self, client, mock_http):
+        url = f"{SANDBOX}/v1/registros"
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        mock_http.add(
+            mock_http.GET,
+            url,
+            json={
+                "registros": [
+                    {
+                        "idRegistro": "r1",
+                        "estado": "aceptada",
+                        "envioCompletadoEn": "2026-09-27T10:05:00Z",
+                    },
+                ],
+                "proximaPagina": "c1",
+            },
+        )
+        mock_http.add(
+            mock_http.GET,
+            url,
+            json={
+                "registros": [
+                    {
+                        "idRegistro": "r1",
+                        "estado": "aceptada",
+                        "envioCompletadoEn": "2026-09-27T10:05:00Z",
+                    },
+                    {
+                        "idRegistro": "r2",
+                        "estado": "rechazada",
+                        "envioCompletadoEn": "2026-09-27T10:09:30Z",
+                    },
+                ],
+            },
+        )
+        cambios = client.registros.cambios_desde("B1", desde)
+        assert cambios.proximo_desde == desde
+        assert [r["idRegistro"] for r in cambios] == ["r1", "r2"]
+        assert cambios.proximo_desde == dt.datetime(2026, 9, 27, 10, 8, 30, tzinfo=dt.timezone.utc)
+        assert "veredictoDesde=2026-09-27T10%3A00%3A00Z" in mock_http.calls[1].request.url
+
+    def test_cambios_desde_no_confunde_facturas_con_el_mismo_id_registro(self, client, mock_http):
+        mismo = {"idRegistro": "UkVD", "estado": "aceptada"}
+        registros = [dict(mismo, idFactura=f) for f in ("F1", "F2", "F3", "F4")]
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": registros})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        items = list(client.registros.cambios_desde("B1", desde))
+        assert [r["idFactura"] for r in items] == ["F1", "F2", "F3", "F4"]
+
+    def test_cambios_desde_deduplica_entre_pasadas_con_vistos(self, client, mock_http):
+        url = f"{SANDBOX}/v1/registros"
+        t = "2026-09-27T10:05:00Z"
+        r1 = {"idFactura": "F1", "idRegistro": "a", "estado": "aceptada_con_errores"}
+        r1 = dict(r1, envioCompletadoEn=t)
+        r1_final = dict(r1, estado="aceptada")
+        r2 = {"idFactura": "F2", "idRegistro": "b", "estado": "rechazada", "envioCompletadoEn": t}
+        mock_http.add(mock_http.GET, url, json={"registros": [r1]})
+        mock_http.add(mock_http.GET, url, json={"registros": [r1, r2, r1_final]})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        vistos: dict = {}
+        primera = client.registros.cambios_desde("B1", desde, vistos=vistos)
+        assert list(primera) == [r1]
+        segunda = client.registros.cambios_desde("B1", primera.proximo_desde, vistos=vistos)
+        assert list(segunda) == [r2, r1_final]
+        assert segunda.vistos is vistos and len(vistos) == 3
+
+    def test_cambios_desde_vistos_acotado_en_un_sondeo_largo(self, client, mock_http):
+        # 200 polls, 5 minutes apart, 10 answers each spread over the interval, and
+        # every poll also re-serves the previous poll's last minute (the overlap).
+        url = f"{SANDBOX}/v1/registros"
+        utc = dt.timezone.utc
+        inicio = dt.datetime(2026, 9, 27, tzinfo=utc)
+        vistos: dict = {}
+        desde = inicio
+        anteriores: list = []
+        for sondeo in range(200):
+            nuevos = []
+            for i in range(10):
+                cuando = inicio + dt.timedelta(minutes=5 * sondeo, seconds=30 * i)
+                nuevos.append(
+                    {
+                        "idFactura": f"F{sondeo}-{i}",
+                        "idRegistro": "UkVD",
+                        "estado": "aceptada",
+                        "envioCompletadoEn": cuando.isoformat().replace("+00:00", "Z"),
+                    }
+                )
+            solape = [
+                r for r in anteriores if r["envioCompletadoEn"] >= desde.isoformat()[:19] + "Z"
+            ]
+            mock_http.add(mock_http.GET, url, json={"registros": solape + nuevos})
+            cambios = client.registros.cambios_desde("B1", desde, vistos=vistos)
+            assert list(cambios) == nuevos
+            assert len(vistos) <= 3  # the records at or after proximo_desde
+            desde, anteriores = cambios.proximo_desde, nuevos
+
+    def test_cambios_desde_poda_aunque_se_corte_el_recorrido(self, client, mock_http):
+        viejo = {"idFactura": "F0", "idRegistro": "x", "estado": "aceptada"}
+        vistos = {clave_cambio(viejo): dt.datetime(2026, 9, 27, 9, tzinfo=dt.timezone.utc)}
+        registros = [
+            {
+                "idFactura": "F1",
+                "idRegistro": "a",
+                "estado": "aceptada",
+                "envioCompletadoEn": "2026-09-27T10:05:00Z",
+            },
+            {
+                "idFactura": "F2",
+                "idRegistro": "b",
+                "estado": "aceptada",
+                "envioCompletadoEn": "2026-09-27T10:06:00Z",
+            },
+        ]
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": registros})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        cambios = client.registros.cambios_desde("B1", desde, vistos=vistos)
+        for _ in cambios:
+            break
+        assert clave_cambio(viejo) not in vistos
+        assert list(vistos) == [("F1", "a", "aceptada")]
+
+    def test_cambios_desde_vacio_no_retrocede(self, client, mock_http):
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": []})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        cambios = client.registros.cambios_desde("B1", desde)
+        assert list(cambios) == []
+        assert cambios.proximo_desde == desde
+
+    def test_cambios_desde_naive_se_rechaza(self, client):
+        with pytest.raises(veribai.FechaError):
+            client.registros.cambios_desde("B1", dt.datetime(2026, 9, 27, 10))
+        with pytest.raises(TypeError):
+            client.registros.cambios_desde("B1", "2026-09-27T10:00:00Z")  # type: ignore[arg-type]
+        with pytest.raises(veribai.FechaError):
+            client.registros.listar("B1", veredicto_desde=dt.date(2026, 9, 27))  # type: ignore[arg-type]
+
+    def test_cambios_desde_ignora_instantes_ilegibles(self, client, mock_http):
+        registros = [
+            {"idRegistro": "r1", "estado": "aceptada"},
+            {"idRegistro": "r2", "estado": "aceptada", "envioCompletadoEn": "ayer"},
+            {"idRegistro": "r3", "estado": "aceptada", "envioCompletadoEn": "2026-09-27T11:00:00"},
+        ]
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": registros})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        cambios = client.registros.cambios_desde("B1", desde)
+        assert len(list(cambios)) == 3
+        assert cambios.proximo_desde == desde
 
 
 class TestCuenta:

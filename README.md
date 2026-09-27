@@ -224,7 +224,7 @@ la API (en español), así que lo que leas en la
 | `client.verifactu` | `crear` · `subsanar` · `anular` |
 | `client.ticketbai` | `crear` · `subsanar` · `anular` |
 | `client.facturas` | `listar` · `iterar` · `obtener` · `buscar` · `estado` · `verdicto` · `esperar_verdicto` · `qr` · `guardar_qr` · `xml` |
-| `client.registros` | `listar` · `iterar` · `obtener` |
+| `client.registros` | `listar` · `iterar` · `cambios_desde` · `obtener` |
 | `client.cuenta` | `obtener` · `consumo` |
 | `client.nif` | `validar` |
 | `client.clientes` | `listar` · `asientos` · `crear` · `obtener` · `modificar` · `cambiar_estado` · `activar` · `desactivar` |

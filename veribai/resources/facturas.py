@@ -98,7 +98,7 @@ class FacturasRecurso(Recurso):
         same envelope as :meth:`obtener`.
 
         Send ``serie`` and ``numero`` separately, never pre-joined: responses
-        report ``numeroFactura`` as their concatenation, so ``serie="A", numero="12"``
+        report ``numSerieFactura`` as their concatenation, so ``serie="A", numero="12"``
         and ``serie="A1", numero="2"`` both read as ``A12`` there while addressing
         different invoices.
         """

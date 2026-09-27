@@ -187,6 +187,29 @@ def hora(value: Union[_dt.time, str], *, campo: str = "horaExpedicion") -> str:
     raise FechaError(f"{campo}: expected datetime.time or str, got {type(value).__name__}")
 
 
+def instante(value: Union[_dt.datetime, str], *, campo: str = "instante") -> str:
+    """Render a point in time as ISO-8601 with an explicit zone (``…Z``).
+
+    A **naive** ``datetime`` is refused: between UTC and Spanish time it is one
+    or two hours ambiguous, and the API answers ``400`` rather than guess. An
+    aware one is converted to UTC and truncated to the whole second, the API's
+    precision (truncating widens an inclusive lower bound, never narrows it).
+    Strings pass through untouched; the API is the authority on them.
+    """
+    if isinstance(value, _dt.datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise FechaError(
+                f"{campo}: naive datetime {value.isoformat()!r}. Attach a timezone "
+                f"(datetime.now(timezone.utc), or ZoneInfo('Europe/Madrid')): without "
+                f"one it is ambiguous by one or two hours and the API rejects it."
+            )
+        utc = value.astimezone(_dt.timezone.utc).replace(microsecond=0, tzinfo=None)
+        return utc.isoformat() + "Z"
+    if isinstance(value, str):
+        return value.strip()
+    raise FechaError(f"{campo}: expected an aware datetime or str, got {type(value).__name__}")
+
+
 def preparar(valor: Any, *, campo: str = "") -> Any:
     """Recursively convert a payload's Python values into wire form.
 
@@ -237,6 +260,7 @@ __all__: List[str] = [
     "fecha",
     "hora",
     "importe",
+    "instante",
     "limpiar",
     "preparar",
     "tipo",

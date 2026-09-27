@@ -6,6 +6,60 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.3.0] - 2026-09-27
+
+### Cambios incompatibles
+
+- **`numeroFactura` pasa a llamarse `numSerieFactura`** en todas las respuestas (facturas, registros,
+  `estado`, webhooks). Mismo valor: serie y número concatenados, como el `NumSerieFactura` de la AEAT.
+  Renombrado antes del lanzamiento (2026-09-24); el nombre antiguo desaparece, no hay alias.
+
+### Añadido
+
+- `serie` y `numero` por separado en `GET /v1/facturas/{id}`, `…/estado`, `GET /v1/registros[/{id}]`
+  y en `datos` de los webhooks. Siempre presentes; `""` en facturas creadas antes del 2026-09-24.
+  No aparecen en la lista `GET /v1/facturas`.
+- `registros.listar`/`iterar` aceptan `veredicto_desde` y `estado` (API desde 2026-09-27) (`aceptada`,
+  `aceptada_con_errores`, `rechazada`) para listar registros por **cuándo respondió la
+  autoridad**, solo los ya respondidos. `veredicto_desde` exige zona horaria: un `datetime`
+  sin `tzinfo` lanza `FechaError` antes de enviar nada. Con `estado`, una página puede venir
+  corta o vacía y seguir teniendo `proximaPagina`; `iterar` sigue hasta `null`.
+- `registros.cambios_desde(nif, desde)`: una pasada del feed de veredictos, más antiguo
+  primero. Tras recorrerla, `proximo_desde` da el siguiente límite (último
+  `envioCompletadoEn` menos 60 s de solape). Por ese solape, los registros del final de una
+  pasada vuelven al principio de la siguiente: pasa el mismo `vistos={}` a cada pasada (o
+  haz tu proceso idempotente) para deduplicar entre pasadas, no solo dentro de una. `vistos`
+  guarda cada clave con su `envioCompletadoEn` y se poda tras cada pasada a las que aún pueden
+  repetirse (~1 minuto de registros), así que no crece aunque el proceso sondee durante meses.
+  Vive en memoria: entre reinicios, la idempotencia es cosa tuya. La clave es
+  `(idFactura, idRegistro, estado)`, expuesta como `clave_cambio`: `idRegistro` solo es único
+  dentro de una factura, y deduplicar solo por él pierde registros reales.
+
+### Documentación
+
+Contrato de la Invoicing API del 2026-09-24: solo campos opcionales nuevos, validación más
+estricta y semántica documentada. Sin cambios de rutas, autenticación ni códigos de error, y
+el cliente no valida nada de esto: la API responde `400` con el campo.
+
+- **TicketBAI `lineas[]`**: `descripcion`, `importeUnitario` e `importeTotal` son obligatorios
+  en todas las provincias; `cantidad` (por defecto `"1"`) y `descuento`, opcionales. Hasta 12
+  enteros y 8 decimales, que `Decimal` conserva. `importeUnitario` es sin IVA, `descuento` va
+  **en euros** para toda la línea (no en %) y nunca negativo, e `importeTotal` es con IVA tras
+  el descuento.
+- **TicketBAI `rectificativa`**: `importes` (`baseRectificada`, `cuotaRectificada`,
+  `cuotaRecargoRectificada?`) obligatorio con `tipo: "S"` y prohibido con `tipo: "I"`; máximo
+  100 facturas en `facturasRectificadas`, y `serie`/`numero` de hasta 20 caracteres (también
+  en `facturasSustituidas`).
+- **TicketBAI**, campos ya aceptados que el esquema ahora lista: `descripcion` (≤250),
+  `fechaOperacion` (`DD-MM-YYYY`, acepta `date`), y `destinatario.direccion` (≤250) /
+  `codigoPostal` (≤20). `retencionSoportada` no puede ser negativa.
+- **VeriFactu `especial`**, ahora un objeto tipado y transmitido entero a la AEAT:
+  `facturaSimplificadaArt7273`, `facturaSinIdentifDestinatarioArt61d`, `emitidaPor`,
+  `tercero`, y los nuevos `cupon` (`"S"`/`"N"`), `numRegistroAcuerdoFacturacion` (≤15) e
+  `idAcuerdoSistemaInformatico` (≤16). `aux.refExterna` se acepta pero **no llega a la AEAT**.
+- **VeriFactu `totales`**: `cuotaTotal` e `importeTotal` llegan a la AEAT tal cual los
+  declaras, con el recargo de equivalencia incluido en ambos.
+
 ## [0.2.2] - 2026-09-23
 
 ### Documentación
@@ -191,6 +245,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.3.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.1.1...v0.2.0
