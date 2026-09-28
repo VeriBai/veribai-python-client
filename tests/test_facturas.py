@@ -471,6 +471,28 @@ class TestRegistros:
         assert len(list(cambios)) == 3
         assert cambios.proximo_desde == desde
 
+    def test_cambios_desde_acepta_ambos_sufijos_utc(self, client, mock_http):
+        # The API sends whole-second "…Z"; "+00:00" still parses to the same instant.
+        registros = [
+            {
+                "idFactura": "F1",
+                "idRegistro": "a",
+                "estado": "aceptada",
+                "envioCompletadoEn": "2026-09-27T10:05:00Z",
+            },
+            {
+                "idFactura": "F2",
+                "idRegistro": "a",
+                "estado": "aceptada",
+                "envioCompletadoEn": "2026-09-27T10:08:30+00:00",
+            },
+        ]
+        mock_http.add(mock_http.GET, f"{SANDBOX}/v1/registros", json={"registros": registros})
+        desde = dt.datetime(2026, 9, 27, 10, tzinfo=dt.timezone.utc)
+        cambios = client.registros.cambios_desde("B1", desde)
+        assert len(list(cambios)) == 2
+        assert cambios.proximo_desde == dt.datetime(2026, 9, 27, 10, 7, 30, tzinfo=dt.timezone.utc)
+
 
 class TestCuenta:
     def test_obtener(self, client, mock_http):
