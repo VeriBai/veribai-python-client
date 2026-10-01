@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.3.1] - 2026-10-01
+
+### Documentación
+
+- `cumplimiento.declaracion_responsable()` documenta la forma de la respuesta (`url` y
+  `lastModified`).
+
 ## [0.3.0] - 2026-09-27
 
 ### Cambios incompatibles
@@ -247,6 +254,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.3.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.0...v0.2.1
