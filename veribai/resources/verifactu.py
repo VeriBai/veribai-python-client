@@ -101,7 +101,14 @@ class VerifactuRecurso(Recurso):
         409: ``INVOICE_NOT_FOUND`` when it is ``false`` but nothing is on record,
         ``INVOICE_EXISTS`` when it is ``true`` but the invoice *is* on record.
 
-        The response is an envelope: the record is under ``data``.
+        ``nombreEmisor`` (optional, max 120) goes in ``facturaAnulada``. VeriBai
+        fills it from the alta when it holds one; for an invoice it never saw
+        (typically ``sinRegistroPrevio: true``) send it exactly as in the AEAT
+        census, or the call fails ``400 VALIDATION_ERROR`` naming
+        ``facturaAnulada.nombreEmisor``.
+
+        The response is an envelope: the record is under ``data``, including
+        ``numSerieFactura``, ``serie`` and ``numero``.
 
         Example::
 
@@ -112,6 +119,19 @@ class VerifactuRecurso(Recurso):
                     "serie": "A",
                     "numero": "1",
                     "fechaExpedicion": date(2026, 9, 15),
+                },
+            })
+
+            # Never reported to AEAT: VeriBai has no alta to take the name from.
+            client.verifactu.anular({
+                "version": "1.0",
+                "sinRegistroPrevio": True,
+                "facturaAnulada": {
+                    "nifEmisor": "B12345674",
+                    "nombreEmisor": "EMPRESA EJEMPLO SL",
+                    "serie": "A",
+                    "numero": "0",
+                    "fechaExpedicion": date(2026, 9, 1),
                 },
             })
         """
