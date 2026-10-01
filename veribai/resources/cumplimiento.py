@@ -14,9 +14,15 @@ class CumplimientoRecurso(Recurso):
         """The current Declaración Responsable: the document certifying that
         VeriBai's sistema informático de facturación complies with the reglamento.
 
+        Returns::
+
+            {
+                "url": "https://docshare.veribai.com/compliance/declaracion-responsable.pdf",
+                "lastModified": "2026-06-20T09:14:22Z",
+            }
+
         Prefer this over hardcoding the URL: you get ``lastModified`` as a change
-        signal and a clean 404 before any document exists, instead of a link that
-        silently breaks for your users.
+        signal.
 
         The endpoint needs an API key; the document it points at does not, since it is
         anonymously readable by design, so a prospect, auditor or tax authority

@@ -492,12 +492,16 @@ class TestWebhooks:
 
 class TestCumplimiento:
     def test_declaracion_responsable(self, client, mock_http):
+        cuerpo = {
+            "url": "https://docshare.veribai.com/compliance/declaracion-responsable.pdf",
+            "lastModified": "2026-06-20T09:14:22Z",
+        }
         mock_http.add(
             mock_http.GET,
             f"{MANAGE}/v1/cumplimiento/declaracion-responsable",
-            json={"url": "https://docshare.veribai.com/compliance/declaracion-responsable.pdf"},
+            json=cuerpo,
         )
-        assert client.cumplimiento.declaracion_responsable()["url"].endswith(".pdf")
+        assert client.cumplimiento.declaracion_responsable() == cuerpo
 
     def test_todavia_no_publicada(self, client, mock_http):
         mock_http.add(
