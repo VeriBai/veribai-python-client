@@ -6,6 +6,27 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.4.0] - 2026-10-01
+
+### Cambios incompatibles
+
+- **`serieNumero` pasa a llamarse `numSerieFactura`** en las respuestas de crear, subsanar y
+  anular (VeriFactu y TicketBAI), con `serie` y `numero` por separado al lado, como en las rutas
+  de lectura (API desde 2026-10-01). En `verifactu.anular` van dentro de `data`; `ticketbai.anular`
+  gana `numSerieFactura`. También en el cuerpo del 409 `INVOICE_IDENTITY_CONFLICT` y en
+  `details` de `INVOICE_HAS_RECTIFICATIVAS`. Sin alias. Con esto, la línea de 0.3.0 «en todas
+  las respuestas» pasa a ser cierta.
+
+### Añadido
+
+- `Verdicto.csv_aeat` deja de ser `None` en las facturas VeriFactu registradas desde el
+  2026-10-01: `csvAeat` aparece ahora en `GET /v1/facturas/{id}/estado`, `GET /v1/facturas/{id}`
+  y la lista. Las registradas antes siguen sin él (no hay relleno). Es el CSV del envío que aceptó
+  el registro vigente; las facturas enviadas juntas comparten CSV.
+- `verifactu.anular` acepta `facturaAnulada.nombreEmisor` (opcional, máx. 120). Obligatorio en la
+  práctica cuando VeriBai no tiene el alta (normalmente `sinRegistroPrevio: true`): debe coincidir
+  con el censo de la AEAT, si no, `400 VALIDATION_ERROR`.
+
 ## [0.3.1] - 2026-10-01
 
 ### Documentación
@@ -254,6 +275,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.4.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.1...v0.2.2
