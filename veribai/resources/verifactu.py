@@ -11,10 +11,11 @@ from ._base import Recurso
 class VerifactuRecurso(Recurso):
     """Alta, subsanación and anulación of VeriFactu records.
 
-    All three replay idempotently: an identical resubmission of the same
-    (serie, número, fechaExpedicion) returns ``200`` with the record already on
-    file instead of creating a second one. That is what makes retrying a timeout
-    safe, and this client retries them for you.
+    An identical resubmission of the same (serie, número, fechaExpedicion)
+    returns ``200`` with the record already on file, marked ``yaExistente: true``,
+    instead of creating a second one. That is what makes retrying a timeout safe,
+    and this client retries them for you. :meth:`anular` flags its replay
+    ``yaAnulada`` instead; see there.
 
     Change ``importeTotal`` or ``tipoFactura`` between attempts, though, and the
     API answers ``409 INVOICE_IDENTITY_CONFLICT``, correctly, because that is a
@@ -109,6 +110,17 @@ class VerifactuRecurso(Recurso):
 
         The response is an envelope: the record is under ``data``, including
         ``numSerieFactura``, ``serie`` and ``numero``.
+
+        A repeat is a retry, not a second cancellation: whatever state the
+        existing anulación is in, it answers ``200`` with **that** anulación
+        (``data.creadoEn`` and ``data.estado`` are the existing one's) and
+        ``data.yaAnulada: true``, as TicketBAI does. Nothing new is created or
+        sent. Only a cancellation AEAT rejected lets a new one through.
+
+        An invoice with rectificativas cannot be cancelled until they are:
+        ``409 INVOICE_HAS_RECTIFICATIVAS`` (a :class:`~veribai.errors.ConflictError`),
+        with ``idFactura``, ``numSerieFactura``, ``serie``, ``numero``,
+        ``fechaExpedicion`` and ``rectificativas`` in ``details``.
 
         Example::
 

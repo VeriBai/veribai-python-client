@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "veribai"
-version = "0.4.0"
+version = "0.4.1"
 description = "Official Python client for the VeriBai API: VeriFactu and TicketBAI invoice submission"
 readme = "README.md"
 license = "Apache-2.0"

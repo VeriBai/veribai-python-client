@@ -149,8 +149,8 @@ petición**, así que hacer `json.loads` y luego `json.dumps` rompe la firma sin
 
 **Excepciones con las que puedes decidir qué hacer.** Cada error documentado tiene su propia
 excepción, con el `code` que devuelve la API. Decide según ese código y no solo por el estado
-HTTP: un `409` puede ser un conflicto de identidad en `crear`, `ALREADY_CANCELLED` en
-`anular`, o un límite del plan o un conflicto de autoemisor en `clientes/crear`.
+HTTP: un `409` puede ser un conflicto de identidad en `crear`, o un límite del plan o un
+conflicto de autoemisor en `clientes/crear`.
 
 Lo que este paquete **no** hace, a propósito, es repetir las reglas de validación fiscal.
 Las definen cuatro administraciones tributarias y van cambiando; un cliente que validara en
