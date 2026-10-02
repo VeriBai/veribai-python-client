@@ -28,6 +28,10 @@ Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios inc
   otra. Igual que `ticketbai.anular`. Si capturabas `AlreadyCancelledError` en este caso, ahora
   mira `data.yaAnulada`. La excepción se mantiene por compatibilidad (`ALREADY_EXISTS` queda
   solo para una carrera teórica).
+- **`facturas.estado()` y `esperar_verdicto()` con una factura sin alta** (la que VeriBai solo
+  conoce por una anulación `sinRegistroPrevio`; API desde 2026-10-02): `/estado` ya no da
+  `404`, lee el último registro. Anulación aceptada: `Verdicto.anulada`; sin respuesta aún,
+  sigue esperando; rechazada, `Verdicto.rechazada`. `facturas.obtener()` coincide.
 
 ## [0.4.0] - 2026-10-01
 
