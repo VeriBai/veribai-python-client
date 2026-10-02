@@ -3,9 +3,8 @@
 Every failure the API can return is raised as a subclass of :class:`VeriBaiError`,
 carrying the machine-readable ``code``. **Branch on ``code``, never on the HTTP
 status alone**: several statuses multiplex codes that mean completely different
-things (a 409 on ``crear`` is a sharding conflict, on ``anular`` it can be
-``ALREADY_CANCELLED``, and on ``clientes/crear`` it is a plan-limit or
-self-client conflict).
+things (a 409 on ``crear`` is an identity or sharding conflict, and on
+``clientes/crear`` it is a plan-limit or self-client conflict).
 
 Two shapes exist on the wire and this module tells them apart:
 
@@ -223,7 +222,12 @@ class SigningInFlightError(ConflictError):
 
 
 class AlreadyCancelledError(ConflictError):
-    """409 ``ALREADY_CANCELLED`` / ``ALREADY_EXISTS``: a cancellation already exists."""
+    """409 ``ALREADY_CANCELLED`` / ``ALREADY_EXISTS``: a cancellation already exists.
+
+    Kept for compatibility: since 2026-10-02 a repeated ``anular`` is a ``200``
+    replay with ``yaAnulada: true``, and ``ALREADY_EXISTS`` only covers a
+    theoretical race.
+    """
 
 
 class ShardingConflictError(ConflictError):

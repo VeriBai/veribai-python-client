@@ -38,8 +38,9 @@ class TicketbaiRecurso(Recurso):
         ``qrBase64`` already populated, and those are final and stable across
         retries, because a duplicate is replayed rather than re-signed.
 
-        A replay of an in-flight duplicate carries ``yaExistente: true`` and no
-        QR: the stored identity was returned and nothing was signed again.
+        Every duplicate replay, in flight or already registered, carries
+        ``yaExistente: true`` and no QR: the stored identity was returned and
+        nothing was signed again. A new invoice has no ``yaExistente``.
 
         Note ``lineas`` is **required for Araba**, whose hacienda rejects altas
         without detail lines, and optional elsewhere. When you do send it, every
@@ -97,8 +98,12 @@ class TicketbaiRecurso(Recurso):
         alta.
 
         An already-registered or in-flight cancellation replays with ``200`` and
-        ``yaAnulada: true``. TicketBAI is idempotent here where VeriFactu answers
-        ``409 ALREADY_CANCELLED``.
+        ``yaAnulada: true``, the same rule as VeriFactu.
+
+        An invoice with rectificativas cannot be cancelled until they are:
+        ``409 INVOICE_HAS_RECTIFICATIVAS`` (a :class:`~veribai.errors.ConflictError`),
+        with ``idFactura``, ``numSerieFactura``, ``serie``, ``numero``,
+        ``fechaExpedicion`` and ``rectificativas`` in ``details``.
         """
         return dict(
             self._post("/v1/ticketbai/anular", json=preparar(anulacion), idempotente=True).datos

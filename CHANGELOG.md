@@ -6,6 +6,29 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.4.1] - 2026-10-02
+
+### Cambios incompatibles
+
+- **`INVOICE_HAS_RECTIFICATIVAS` es `409` también en `ticketbai.anular`** (antes `400`; API
+  desde 2026-10-02): ahora lanza `ConflictError` en vez de `ValidationError`, como en
+  VeriFactu. `details` tiene la misma forma en los dos: `idFactura`, `numSerieFactura`,
+  `serie`, `numero`, `fechaExpedicion` y `rectificativas`. En VeriFactu, `details.fecha` pasa a
+  llamarse `fechaExpedicion`, sin alias.
+
+### Documentación
+
+- **`yaExistente: true` en toda repetición de un `crear`** (VeriFactu y TicketBAI, API desde
+  2026-10-02): reenviar la misma factura responde `200` con la ya guardada y `yaExistente:
+  true`, esté aún en proceso o ya registrada (antes, solo la que estaba en proceso). Quiere
+  decir «esto ya lo teníamos; no se ha creado nada». No aparece en una factura nueva.
+- **Repetir `verifactu.anular` ya no da `409 ALREADY_CANCELLED`** (API desde 2026-10-02):
+  responde `200` con la anulación existente (`data.creadoEn` y `data.estado` son los suyos) y
+  `data.yaAnulada: true`, en cualquier estado salvo rechazada por la AEAT, que sí deja pasar
+  otra. Igual que `ticketbai.anular`. Si capturabas `AlreadyCancelledError` en este caso, ahora
+  mira `data.yaAnulada`. La excepción se mantiene por compatibilidad (`ALREADY_EXISTS` queda
+  solo para una carrera teórica).
+
 ## [0.4.0] - 2026-10-01
 
 ### Cambios incompatibles
@@ -275,6 +298,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.4.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.2.2...v0.3.0
