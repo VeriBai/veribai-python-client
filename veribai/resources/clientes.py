@@ -98,6 +98,26 @@ class ClientesRecurso(Recurso):
             ).datos
         )
 
+    def promover(self, nif: str) -> Dict[str, Any]:
+        """Copy a TEST client to LIVE (``POST /v1/clientes/{nif}/promover``).
+
+        Copies the fiscal identity only (``hacienda``, ``tipoUsuario``, ``nombre``,
+        ``direccion``, ``representante``, ``epigrafeIAE``); a mandate signed in
+        TEST is the same mandate in LIVE. Source and target are fixed, so either of
+        the account's keys works and the key's environment is ignored.
+
+        Consumes a LIVE seat like :meth:`crear`. Answers ``201`` when copied and
+        ``200`` with the existing LIVE client when it is already there (no seat
+        consumed), so a retry is safe. Returns ``{message, origen, entorno,
+        cliente}``.
+
+        ``404 SECONDARY_CLIENT_NOT_FOUND`` covers missing, not yours and
+        soft-deleted in TEST alike. ``409`` has three codes, so branch on ``code``:
+        ``LIVE_NOT_PROVISIONED`` (no LIVE environment yet), ``CLIENT_DELETED_IN_LIVE``
+        (restore it in LIVE instead) and ``CLIENT_LIMIT_REACHED``.
+        """
+        return dict(self._post(f"/v1/clientes/{_nif(nif)}/promover", idempotente=True).datos)
+
     def activar(self, nif: str) -> Dict[str, Any]:
         """Shorthand for :meth:`cambiar_estado` with ``activo``."""
         return self.cambiar_estado(nif, "activo")
