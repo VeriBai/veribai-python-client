@@ -231,6 +231,32 @@ class TestClientes:
         client.clientes.desactivar("B1")
         assert cuerpo(mock_http, 1) == {"estado": "inactivo"}
 
+    def test_promover_sin_cuerpo(self, client, mock_http):
+        mock_http.add(
+            mock_http.POST,
+            f"{MANAGE}/v1/clientes/B1/promover",
+            json={
+                "message": "Cliente copiado a LIVE",
+                "origen": "test",
+                "entorno": "live",
+                "cliente": {},
+            },
+            status=201,
+        )
+        assert client.clientes.promover("B1")["entorno"] == "live"
+        assert not mock_http.calls[0].request.body
+
+    def test_promover_sin_live(self, client, mock_http):
+        mock_http.add(
+            mock_http.POST,
+            f"{MANAGE}/v1/clientes/B1/promover",
+            json=error("LIVE_NOT_PROVISIONED"),
+            status=409,
+        )
+        with pytest.raises(veribai.ConflictError) as exc:
+            client.clientes.promover("B1")
+        assert exc.value.code == "LIVE_NOT_PROVISIONED"
+
     def test_estado_invalido_se_para_antes_de_salir(self, client):
         with pytest.raises(ValueError, match="activo"):
             client.clientes.cambiar_estado("B1", "eliminado")
