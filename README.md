@@ -230,7 +230,7 @@ la API (en español), así que lo que leas en la
 | `client.registros` | `listar` · `iterar` · `cambios_desde` · `obtener` |
 | `client.cuenta` | `obtener` · `consumo` |
 | `client.nif` | `validar` |
-| `client.clientes` | `listar` · `asientos` · `crear` · `obtener` · `modificar` · `cambiar_estado` · `activar` · `desactivar` |
+| `client.clientes` | `listar` · `asientos` · `crear` · `obtener` · `modificar` · `promover` · `cambiar_estado` · `activar` · `desactivar` |
 | `client.dispositivos` | `listar` · `registrar` · `dar_de_baja` · `promover` · `solicitar_activacion` · `reservar_series_centralizadas` · `liberar_serie_centralizada` |
 | `client.representacion` | `generar` · `firmar` · `verificar` · `estado` · `cancelar_firma` |
 | `client.webhooks` | `listar` · `crear` · `obtener` · `modificar` · `eliminar` · `listar_clientes` · `vincular_clientes` · `desvincular_cliente` |

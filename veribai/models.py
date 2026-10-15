@@ -53,6 +53,12 @@ class Verdicto:
     :attr:`requiere_subsanacion` read only ``estado_envio``: those two verdicts
     exist solely in the second shape. Verified against sandbox on 2026-09-22 on
     VeriFactu and TicketBAI alike.
+
+    An invoice VeriBai knows only through an anulación (``sinRegistroPrevio``)
+    reads the same way from that record: ``estadoFactura: "anulada"`` once AEAT
+    accepts it, ``estadoEnvio`` while in flight or rejected. ``csv_aeat`` is then
+    the accepted anulación's CSV; for any invoice with an alta it stays the CSV
+    of the envío that accepted the current alta/subsanación.
     """
 
     id_factura: str
