@@ -31,7 +31,10 @@ Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios inc
 - **`facturas.estado()` y `esperar_verdicto()` con una factura sin alta** (la que VeriBai solo
   conoce por una anulación `sinRegistroPrevio`; API desde 2026-10-02): `/estado` ya no da
   `404`, lee el último registro. Anulación aceptada: `Verdicto.anulada`; sin respuesta aún,
-  sigue esperando; rechazada, `Verdicto.rechazada`. `facturas.obtener()` coincide.
+  sigue esperando; rechazada, `Verdicto.rechazada`. `facturas.obtener()` coincide, también en
+  `csvAeat`: los dos dan el CSV de la anulación aceptada (antes, `null` en el detalle). En una
+  factura con alta, `csvAeat` sigue siendo el del envío que aceptó el alta o subsanación vigente;
+  una anulación no lo sustituye.
 
 ## [0.4.0] - 2026-10-01
 

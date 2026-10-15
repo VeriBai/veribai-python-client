@@ -56,7 +56,9 @@ class Verdicto:
 
     An invoice VeriBai knows only through an anulación (``sinRegistroPrevio``)
     reads the same way from that record: ``estadoFactura: "anulada"`` once AEAT
-    accepts it, ``estadoEnvio`` while in flight or rejected.
+    accepts it, ``estadoEnvio`` while in flight or rejected. ``csv_aeat`` is then
+    the accepted anulación's CSV; for any invoice with an alta it stays the CSV
+    of the envío that accepted the current alta/subsanación.
     """
 
     id_factura: str
