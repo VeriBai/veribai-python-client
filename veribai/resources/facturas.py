@@ -75,7 +75,15 @@ class FacturasRecurso(Recurso):
         )
 
     def obtener(self, id_factura: str, *, nif_emisor: str) -> Dict[str, Any]:
-        """One invoice with all its submission records (``GET /v1/facturas/{id}``)."""
+        """One invoice with all its submission records (``GET /v1/facturas/{id}``).
+
+        For TicketBAI, ``idTbai`` is the invoice's **current** identifier: a
+        subsanación mints a new one, and each alta/subsanación record keeps its
+        own ``idTbai``. Cancellation records carry none, and VeriFactu invoices
+        have none at all: the key is absent, never ``None``, so read it with
+        ``.get``. ``idRegistroTbai`` is the hacienda's receipt reference, not the
+        identifier.
+        """
         return dict(
             self._get(
                 f"/v1/facturas/{quote(str(id_factura), safe='')}",
