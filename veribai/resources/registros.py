@@ -136,6 +136,10 @@ class RegistrosRecurso(Recurso):
         zero**, and still carry ``proximaPagina``: only a ``None`` cursor means
         the end. The cursor is bound to the filters that produced it, so send the
         same ones with every page (``400 INVALID_CURSOR`` otherwise).
+
+        TicketBAI rows carry the hacienda's answer inline, as on the detail:
+        ``codigoRespuestaTbai``, ``mensajeRespuestaTbai``, ``idRegistroTbai`` and
+        ``idTbai``, each only when it has a value. VeriFactu rows omit all four.
         """
         params = limpiar(
             {
@@ -244,6 +248,10 @@ class RegistrosRecurso(Recurso):
         ``idRegistro`` is an **opaque token**. Pass back exactly what the API gave
         you: do not parse it, split it, construct one, or depend on its length or
         alphabet. An unrecognised token is a ``400``.
+
+        A TicketBAI alta or subsanación record carries its own ``idTbai``;
+        cancellations and VeriFactu records omit the key. Not to be confused with
+        ``idRegistroTbai``, the hacienda's receipt reference.
         """
         params = {"nifEmisor": nif_emisor, "idFactura": id_factura}
         return dict(

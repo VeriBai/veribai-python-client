@@ -39,8 +39,9 @@ class TicketbaiRecurso(Recurso):
         retries, because a duplicate is replayed rather than re-signed.
 
         Every duplicate replay, in flight or already registered, carries
-        ``yaExistente: true`` and no QR: the stored identity was returned and
-        nothing was signed again. A new invoice has no ``yaExistente``.
+        ``yaExistente: true``, the stored ``idTbai`` and no QR: the stored
+        identity was returned and nothing was signed again. A new invoice has no
+        ``yaExistente``.
 
         Note ``lineas`` is **required for Araba**, whose hacienda rejects altas
         without detail lines, and optional elsewhere. When you do send it, every
