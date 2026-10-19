@@ -6,6 +6,20 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.5.1]
+
+### Documentación
+
+- **`idTbai` en la lectura de facturas y registros** (TicketBAI): `facturas.obtener`/`buscar`
+  lo devuelven con el identificador vigente (una subsanación genera uno nuevo), y cada registro
+  de alta o subsanación, en el detalle y en `registros.obtener`, lleva el suyo. Las anulaciones
+  y VeriFactu no lo traen: la clave falta, nunca es `null`. `ticketbai.crear` lo incluye ahora
+  también al repetir (`yaExistente: true`). No es `idRegistroTbai`, que es el justificante de
+  la hacienda.
+- **Respuesta de la hacienda en `registros.listar`/`iterar`/`cambios_desde`** (TicketBAI): cada
+  registro trae `codigoRespuestaTbai`, `mensajeRespuestaTbai`, `idRegistroTbai` e `idTbai`, como
+  en el detalle, cuando tienen valor. Las filas de VeriFactu no los traen.
+
 ## [0.5.0] - 2026-10-15
 
 ### Añadido
@@ -315,6 +329,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.5.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.3.1...v0.4.0
