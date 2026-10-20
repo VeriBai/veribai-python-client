@@ -6,6 +6,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el 
 
 Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
 
+## [0.5.2]
+
+### Documentación
+
+- **`documentoDisponible` en `facturas.listar`/`iterar`/`obtener`**: vale `true` solo en las
+  facturas emitidas desde el panel de VeriBai con el PDF guardado; en las demás la clave falta,
+  nunca es `false`. Las facturas enviadas por la API no lo traen. El PDF solo se descarga desde
+  el panel, así que el cliente no tiene método para ello.
+
 ## [0.5.1]
 
 ### Documentación
@@ -329,6 +338,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[0.5.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.0...v0.4.1

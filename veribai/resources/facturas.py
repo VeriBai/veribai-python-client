@@ -44,6 +44,10 @@ class FacturasRecurso(Recurso):
         ``fecha_inicio``/``fecha_fin`` are ISO-8601 bounds on the **registration**
         date, not the issue date. A value above the maximum ``limite`` is capped
         rather than refused; a non-integer or non-positive one is a 400.
+
+        A row carries ``documentoDisponible: true`` only for an invoice issued
+        from the VeriBai dashboard whose PDF is stored; otherwise the key is
+        absent, never ``false``. The PDF is downloadable from the dashboard only.
         """
         params = limpiar(
             {
@@ -83,6 +87,10 @@ class FacturasRecurso(Recurso):
         have none at all: the key is absent, never ``None``, so read it with
         ``.get``. ``idRegistroTbai`` is the hacienda's receipt reference, not the
         identifier.
+
+        ``factura.documentoDisponible`` is ``true`` only for a dashboard-issued
+        invoice whose PDF is stored; API-filed invoices omit the key. Its absence
+        means no document, not an error.
         """
         return dict(
             self._get(
