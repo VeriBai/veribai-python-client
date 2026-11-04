@@ -2,7 +2,9 @@ name: test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
+  # Not on pushes to develop: a PR from develop already runs this on the merge
+  # commit, and the two runs together asked for ten macOS runners at once.
   pull_request:
   workflow_dispatch:
   # Called by release.yml, so a release runs the same suite rather than a copy
@@ -36,8 +38,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # Hosted macOS runners are scarce: five of them queued for 15-50 minutes
+        # while every Linux and Windows job was done inside a minute. The
+        # library is pure Python with one dependency, so one macOS job is enough
+        # to catch an OS-specific difference; the version matrix runs elsewhere.
+        include:
+          - os: macos-latest
+            python-version: "3.12"
     steps:
       # Every third-party action is pinned to a commit SHA, not a tag: a tag can
       # be moved to point at different code after review.
