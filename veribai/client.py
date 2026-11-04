@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import warnings
 from types import TracebackType
 from typing import Any, Optional, Type
 
@@ -37,20 +36,14 @@ VAR_ENTORNO = "VERIBAI_ENVIRONMENT"
 
 
 class LiveEnvironmentWarning(UserWarning):
-    """Raised once when a client is pointed at LIVE.
+    """No longer emitted. Kept so an existing ``warnings.filterwarnings`` line imports.
 
-    The message names *how* LIVE was chosen, because the two paths are not equally
-    alarming: ``environment="live"`` is someone saying so, while
-    ``VERIBAI_ENVIRONMENT=live`` is a deployment deciding it for code that never
-    mentions production.
+    Releases before 1.0.0 raised it once when a client was pointed at LIVE, as a
+    reminder while the package was in beta. Selecting LIVE is now an ordinary
+    choice and nothing warns; ``client.origen_entorno`` still says *how* the
+    environment was chosen, which is the part worth logging.
 
-    LIVE has never been deployed as of this release, so the production base URL
-    is present but unexercised. Silence it with::
-
-        warnings.filterwarnings("ignore", category=veribai.LiveEnvironmentWarning)
-
-    It will be removed in 1.0.0, which is reserved for the first release made
-    after LIVE has actually run.
+    Deprecated: it will be removed in 2.0.0.
     """
 
 
@@ -113,8 +106,8 @@ class Client:
             )
 
         # Resolution order, and the *source* is kept: a LIVE selected by an
-        # environment variable is the dangerous case, because nothing in the
-        # calling code says "live" and the warning is the only thing that does.
+        # environment variable is the case worth logging, because nothing in the
+        # calling code says "live" and ``origen_entorno`` is the only thing that does.
         if environment is not None:
             nombre_entorno, origen = environment, "the environment= argument"
         elif os.environ.get(VAR_ENTORNO):
@@ -124,16 +117,6 @@ class Client:
             nombre_entorno, origen = "test", "the default"
         self._entorno = normalize_environment(nombre_entorno)
         self._origen_entorno = origen
-        if self._entorno == LIVE:
-            warnings.warn(
-                f"VeriBai LIVE selected by {origen}. Invoices filed here are "
-                f"legally binding fiscal records. As of this release the production "
-                f"environment has never been deployed, so calls to api.veribai.com "
-                f"may answer 503 ENVIRONMENT_NOT_AVAILABLE. Confirm with "
-                f"client.cuenta.obtener() before invoicing.",
-                LiveEnvironmentWarning,
-                stacklevel=2,
-            )
 
         self._transport = Transport(
             clave, timeout=timeout, retry=retry, session=session, user_agent=user_agent

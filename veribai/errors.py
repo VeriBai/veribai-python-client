@@ -314,10 +314,10 @@ class ChainContentionError(ServiceUnavailableError):
 
 
 class EnvironmentNotAvailableError(ServiceUnavailableError):
-    """503 ``ENVIRONMENT_NOT_AVAILABLE``: the addressed environment is not deployed.
+    """503 ``ENVIRONMENT_NOT_AVAILABLE``: the addressed environment is not provisioned.
 
-    Not retryable. As of this release LIVE has never been deployed, so a LIVE
-    call can legitimately answer this.
+    Not retryable: it is a provisioning state, not a transient fault, so it will
+    still be there in twenty seconds.
     """
 
 
