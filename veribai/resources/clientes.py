@@ -56,8 +56,16 @@ class ClientesRecurso(Recurso):
         opaque ``400`` in both cases, and that opacity is what stops this endpoint
         being an ownership oracle, so do not read a 400 here as "already exists".
 
-        ``representante`` is required for ``tipoUsuario="empresa"``;
-        ``epigrafeIAE`` for an autónomo under ``tbai-bizkaia``.
+        ``representante`` is required for ``tipoUsuario="empresa"``. ``epigrafeIAE``
+        is required under ``tbai-bizkaia`` for every client that files the LROE
+        140: an autónomo, and an ``empresa`` whose NIF starts with ``E`` or ``J``
+        (an entidad en atribución de rentas); any other ``empresa`` may not carry
+        it. A TicketBAI alta for such an emisor without it is a ``400`` before
+        anything is signed.
+
+        On your **own** NIF, ``direccion`` is also the account's fiscal address
+        (always in LIVE; in TEST only while the account has no LIVE emisor). If
+        that copy failed, the response carries ``aviso``.
         """
         return dict(self._post("/v1/clientes/crear", json=preparar(cliente)).datos)
 
@@ -71,7 +79,10 @@ class ClientesRecurso(Recurso):
 
         ``nombre``, ``direccion``, ``representante``, ``epigrafeIAE`` and
         ``portalHabilitado`` only. Touching ``hacienda`` answers ``409`` with
-        ``camposBloqueados``.
+        ``camposBloqueados``. ``epigrafeIAE`` follows the same rule as
+        :meth:`crear` (autónomos and ``E``/``J`` empresas under ``tbai-bizkaia``),
+        and a ``direccion`` change on your own NIF also moves the account's
+        fiscal address (``aviso`` if that copy failed).
         """
         return dict(
             self._patch(f"/v1/clientes/{_nif(nif)}", json=preparar(cambios), idempotente=True).datos

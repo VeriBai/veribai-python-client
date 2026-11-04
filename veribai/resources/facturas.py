@@ -154,7 +154,9 @@ class FacturasRecurso(Recurso):
 
         A ``200`` from ``crear`` means *accepted for processing*. This waits for
         the real outcome: VeriFactu is submitted by a minute-tick pipeline, so
-        allow at least a couple of minutes; TicketBAI usually answers in seconds.
+        allow at least a couple of minutes; TicketBAI usually answers in seconds,
+        unless the foral is down, in which case the record stays in flight while
+        the API re-sends it (for up to about a day) and this call times out.
 
         Args:
             timeout: seconds to wait before giving up. Giving up is not a

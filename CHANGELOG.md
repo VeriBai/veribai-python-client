@@ -4,7 +4,42 @@ Aquí se documentan todos los cambios relevantes del proyecto.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), y el proyecto usa
 [versionado semántico](https://semver.org/lang/es/).
 
-Mientras el paquete sea `0.x`, las versiones menores pueden contener cambios incompatibles.
+Desde la `1.0.0`, un cambio incompatible solo llega con una versión mayor.
+
+## [1.0.0]
+
+Primera versión estable. Respecto a la `0.5.2` no cambia ningún método, parámetro ni
+excepción: lo que ya funciona sigue funcionando igual.
+
+### Cambios
+
+- **Elegir `live` ya no emite `LiveEnvironmentWarning`.** Era un recordatorio de la fase
+  beta. La clase sigue exportada para que un
+  `warnings.filterwarnings(..., category=veribai.LiveEnvironmentWarning)` existente siga
+  importando, y se retirará en la `2.0.0`. `client.origen_entorno` sigue diciendo quién
+  eligió el entorno.
+- El clasificador de PyPI pasa de *Beta* a *Production/Stable*.
+
+### Documentación
+
+- **`epigrafeIAE` en `clientes.crear`/`modificar`** (`tbai-bizkaia`): obligatorio también
+  para una `empresa` cuyo NIF empieza por `E` o `J` (entidad en atribución de rentas:
+  comunidad de bienes, sociedad civil), que Bizkaia lleva al LROE 140. Las demás empresas
+  no pueden llevarlo. Un alta de TicketBAI de ese emisor sin epígrafe responde `400` antes
+  de firmar nada.
+- **`direccion` del cliente propio** en `clientes.crear`/`modificar`: en el NIF de la propia
+  cuenta es también la dirección fiscal de la cuenta (en LIVE siempre; en TEST solo
+  mientras no haya emisor en LIVE). Si esa copia falla, la respuesta lleva `aviso`.
+- **Reintentos ante caída de la hacienda foral** (TicketBAI) en `registros.listar`/`iterar`/
+  `cambios_desde`/`obtener`: un «servicio no disponible» (`006` en Gipuzkoa y Araba, una
+  respuesta ilegible o un fallo de transporte) ya no deja el registro `rechazada`; se
+  reenvía el mismo fichero firmado con esperas crecientes durante unas 24 horas y el
+  registro sigue `en_cola`. El historial va en `reintentosHacienda`, `primerReintentoEn`,
+  `ultimoReintentoEn`, `proximoReintentoEn`, `codigoReintento` y `mensajeReintento`, solo
+  cuando ha habido algún intento. `ticketbai.subsanar` responde `409
+  RESEND_UNMODIFIED_REQUIRED` solo ante un rechazo por certificado (`001`/`007`), y
+  `facturas.esperar_verdicto` puede agotar su `timeout` mientras dura la caída.
+- El `README` indica que `/v1/documentos/*` y `/v1/eet/*` no tienen método en el cliente.
 
 ## [0.5.2]
 
@@ -338,6 +373,7 @@ producción todavía no se ha ejercitado.
 - `cuenta.consumo()` documenta `observadoEn` y que el único aviso fiable de haber agotado el
   cupo es un `429`: la cifra se refresca por ciclos y puede ir minutos por detrás.
 
+[1.0.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.2...v1.0.0
 [0.5.2]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/VeriBai/veribai-python-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/VeriBai/veribai-python-client/compare/v0.4.1...v0.5.0

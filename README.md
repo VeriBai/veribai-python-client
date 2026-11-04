@@ -211,11 +211,6 @@ export VERIBAI_API_KEY=...
 export VERIBAI_ENVIRONMENT=live     # por defecto: test
 ```
 
-> **LIVE todavía no está probado en esta versión.** `api.veribai.com` aún no está desplegada,
-> así que al elegir `live` se emite un `LiveEnvironmentWarning` y las llamadas pueden
-> devolver `503 ENVIRONMENT_NOT_AVAILABLE`. Publicaremos la versión `1.0.0` cuando producción
-> esté funcionando.
-
 ## Métodos disponibles
 
 Los métodos siguen los mismos nombres que los endpoints, y los campos se llaman igual que en
@@ -235,6 +230,10 @@ la API (en español), así que lo que leas en la
 | `client.representacion` | `generar` · `firmar` · `verificar` · `estado` · `cancelar_firma` |
 | `client.webhooks` | `listar` · `crear` · `obtener` · `modificar` · `eliminar` · `listar_clientes` · `vincular_clientes` · `desvincular_cliente` |
 | `client.cumplimiento` | `declaracion_responsable` |
+
+Las rutas de facturación sin API (`/v1/documentos/*`) y las del EET checo (`/v1/eet/*`) no
+tienen método en esta versión. Si las necesitas, llámalas con `requests` y la misma clave: la
+documentación de la API describe cada una.
 
 Las respuestas se devuelven como diccionarios con el JSON ya decodificado. Lo hemos
 decidido así porque la API va incorporando campos nuevos (hace poco se añadieron tres en una

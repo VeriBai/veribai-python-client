@@ -13,7 +13,7 @@ salvo que prefieras que no.
 
 ## Versiones soportadas
 
-Solo la última `0.x` publicada, mientras el paquete siga siendo anterior a la 1.0.
+Solo la última versión publicada.
 
 ## Qué se le confía a este paquete
 

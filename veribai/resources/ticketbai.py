@@ -83,9 +83,12 @@ class TicketbaiRecurso(Recurso):
         deliberate: the customer already has that QR on their invoice, and
         re-signing would invalidate a document already in their hands.
 
-        Where the rejection was about the certificate or the service instead, the
-        correct action is to resend unmodified, and the API says so with
-        ``409 RESEND_UNMODIFIED_REQUIRED`` rather than guessing.
+        Where the rejection was about the certificate instead (``001``/``007``),
+        the correct action is to resend unmodified, and the API says so with
+        ``409 RESEND_UNMODIFIED_REQUIRED`` rather than guessing. A foral that was
+        merely unavailable (``006``) never rejects the record: the API re-sends
+        it by itself, and the record shows that history (see
+        :meth:`~veribai.resources.registros.RegistrosRecurso.listar`).
         """
         return dict(
             self._put("/v1/ticketbai/subsanar", json=preparar(factura), idempotente=True).datos

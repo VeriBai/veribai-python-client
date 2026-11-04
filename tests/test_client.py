@@ -24,21 +24,19 @@ class TestConstruccion:
         assert c.es_live is False
 
     def test_live_explicito(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", veribai.LiveEnvironmentWarning)
-            c = veribai.Client(api_key="k", environment="live")
+        c = veribai.Client(api_key="k", environment="live")
         assert c.entorno == "live"
         assert c.invoicing_url == "https://api.veribai.com"
         assert c.es_live is True
 
-    def test_live_avisa_una_vez(self):
-        # LIVE has never been deployed as of this release; saying so beats a
-        # confusing 503 at the worst possible moment.
+    def test_live_no_avisa(self):
+        # The beta-era warning is gone, but the class stays importable so an
+        # existing ``warnings.filterwarnings`` line in user code does not break.
         with warnings.catch_warnings(record=True) as capturados:
             warnings.simplefilter("always")
             veribai.Client(api_key="k", environment="live")
-        assert len(capturados) == 1
-        assert issubclass(capturados[0].category, veribai.LiveEnvironmentWarning)
+        assert capturados == []
+        assert issubclass(veribai.LiveEnvironmentWarning, UserWarning)
 
     def test_sandbox_no_avisa(self):
         with warnings.catch_warnings(record=True) as capturados:
@@ -52,9 +50,7 @@ class TestConstruccion:
 
     @pytest.mark.parametrize("alias", ["live", "prod", "production", "produccion"])
     def test_alias_de_live(self, alias):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            assert veribai.Client(api_key="k", environment=alias).entorno == "live"
+        assert veribai.Client(api_key="k", environment=alias).entorno == "live"
 
     def test_entorno_desconocido_no_cae_en_ninguno(self):
         # A typo must not silently pick an environment, least of all LIVE.
@@ -85,26 +81,23 @@ class TestConstruccion:
         monkeypatch.setenv("VERIBAI_ENVIRONMENT", "live")
         assert veribai.Client(api_key="k", environment="test").entorno == "test"
 
-    def test_el_aviso_nombra_la_variable_que_eligio_live(self, monkeypatch):
-        # The dangerous path. `Client(api_key=...)` reads as sandbox (the README
-        # said so outright until 2026-09-17) while a variable set in the
-        # deployment picks LIVE and nothing in the calling code mentions it. The
-        # warning is then the ONLY thing that does, so it has to name the source:
-        # "LIVE selected" sends you reading your code, which is not where it is.
+    def test_origen_nombra_la_variable_que_eligio_live(self, monkeypatch):
+        # The path worth logging. `Client(api_key=...)` reads as sandbox while a
+        # variable set in the deployment picks LIVE and nothing in the calling
+        # code mentions it. `origen_entorno` is then the ONLY thing that does, so
+        # it has to name the source: "live" alone sends you reading your code,
+        # which is not where it is. Nothing warns.
         monkeypatch.setenv("VERIBAI_ENVIRONMENT", "live")
         with warnings.catch_warnings(record=True) as capturados:
             warnings.simplefilter("always")
             c = veribai.Client(api_key="k")
         assert c.es_live is True
         assert c.origen_entorno == "the VERIBAI_ENVIRONMENT environment variable"
-        assert "VERIBAI_ENVIRONMENT environment variable" in str(capturados[0].message)
+        assert capturados == []
 
-    def test_el_aviso_nombra_el_argumento_que_eligio_live(self):
-        with warnings.catch_warnings(record=True) as capturados:
-            warnings.simplefilter("always")
-            c = veribai.Client(api_key="k", environment="live")
+    def test_origen_nombra_el_argumento_que_eligio_live(self):
+        c = veribai.Client(api_key="k", environment="live")
         assert c.origen_entorno == "the environment= argument"
-        assert "environment= argument" in str(capturados[0].message)
 
     def test_un_entorno_vacio_no_cae_en_la_variable(self, monkeypatch):
         # The delta introduced with origen_entorno, kept on purpose. Until
