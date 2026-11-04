@@ -140,6 +140,15 @@ class RegistrosRecurso(Recurso):
         TicketBAI rows carry the hacienda's answer inline, as on the detail:
         ``codigoRespuestaTbai``, ``mensajeRespuestaTbai``, ``idRegistroTbai`` and
         ``idTbai``, each only when it has a value. VeriFactu rows omit all four.
+
+        A TicketBAI record the foral could not take (a «service unavailable»
+        ``006`` in Gipuzkoa and Araba, an unreadable answer, a transport failure)
+        is not rejected: the same signed file is re-sent with growing waits for
+        about a day and the record stays ``en_cola``. The history is
+        ``reintentosHacienda``, ``primerReintentoEn``, ``ultimoReintentoEn``,
+        ``proximoReintentoEn``, ``codigoReintento`` and ``mensajeReintento``,
+        present only once there has been an attempt and kept after the verdict.
+        :meth:`obtener` carries them too.
         """
         params = limpiar(
             {
